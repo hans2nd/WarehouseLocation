@@ -96,6 +96,63 @@
             </div>
         </div>
 
+        {{-- Form Pencarian --}}
+        <div class="px-6 py-4 bg-gray-50 border-b border-gray-200">
+            <form action="{{ route('locations.index') }}" method="GET">
+                <div class="flex flex-col sm:flex-row gap-2 sm:gap-0">
+                    {{-- Input Group dengan Tombol --}}
+                    <div class="flex flex-1 rounded-lg shadow-sm">
+                        {{-- Ikon Search --}}
+                        <span class="inline-flex items-center px-3 bg-gray-100 border border-r-0 border-gray-300 rounded-l-lg">
+                            <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg>
+                        </span>
+                        {{-- Input Field --}}
+                        <input type="text" name="search" value="{{ request('search') }}"
+                            class="flex-1 min-w-0 block w-full px-3 py-2.5 border border-gray-300 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 {{ request('search') ? '' : 'rounded-r-lg sm:rounded-r-none' }}"
+                            placeholder="Cari lokasi, warehouse, atau deskripsi...">
+                        {{-- Tombol Cari (Desktop) --}}
+                        <button type="submit"
+                            class="hidden sm:inline-flex items-center px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition {{ request('search') ? '' : 'rounded-r-lg' }}">
+                            Cari
+                        </button>
+                        {{-- Tombol Reset (jika ada pencarian) --}}
+                        @if(request('search'))
+                        <a href="{{ route('locations.index') }}"
+                            class="hidden sm:inline-flex items-center px-4 py-2.5 bg-gray-500 hover:bg-gray-600 text-white text-sm font-medium rounded-r-lg transition">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </a>
+                        @endif
+                    </div>
+                    {{-- Tombol Cari & Reset (Mobile) --}}
+                    <div class="flex sm:hidden gap-2">
+                        <button type="submit"
+                            class="flex-1 inline-flex items-center justify-center px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition shadow-sm">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg>
+                            Cari
+                        </button>
+                        @if(request('search'))
+                        <a href="{{ route('locations.index') }}"
+                            class="inline-flex items-center justify-center px-4 py-2.5 bg-gray-500 hover:bg-gray-600 text-white text-sm font-medium rounded-lg transition shadow-sm">
+                            Reset
+                        </a>
+                        @endif
+                    </div>
+                </div>
+                {{-- Info hasil pencarian --}}
+                @if(request('search'))
+                <div class="mt-2 text-sm text-gray-600">
+                    Menampilkan hasil untuk: <span class="font-medium text-blue-600">"{{ request('search') }}"</span>
+                </div>
+                @endif
+            </form>
+        </div>
+
         {{-- Alert Success --}}
         @if (session('success'))
             <div

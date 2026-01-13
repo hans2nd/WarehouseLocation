@@ -11,9 +11,21 @@ use App\Exports\LocationTemplateExport;
 
 class LocationController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $locations = WarehouseLocation::latest()->paginate(100);
+        $query = WarehouseLocation::query();
+
+        // Filter berdasarkan pencarian
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('location_code', 'like', "%{$search}%")
+                  ->orWhere('warehouse', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%");
+            });
+        }
+
+        $locations = $query->latest()->paginate(100)->withQueryString();
         return view('locations.index', compact('locations'));
     }
 
