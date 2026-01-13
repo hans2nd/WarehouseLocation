@@ -56,12 +56,27 @@ class LocationController extends Controller
         $request->validate([
             'ids' => 'required|array',
             'ids.*' => 'exists:warehouse_locations,id',
+            'print_type' => 'nullable|string|in:standard,flooring,racking,double_deep',
+            'arrow_direction' => 'nullable|string|in:alternate,left,right',
         ]);
 
         // Ambil data berdasarkan ID yang dicentang
         $locations = WarehouseLocation::whereIn('id', $request->ids)->get();
+        
+        // Tentukan view berdasarkan tipe print
+        $printType = $request->input('print_type', 'standard');
+        $arrowDirection = $request->input('arrow_direction', 'alternate');
+        
+        $viewMap = [
+            'standard' => 'locations.print',
+            'flooring' => 'locations.print-flooring',
+            'racking' => 'locations.print-racking',
+            'double_deep' => 'locations.print-double-deep',
+        ];
+        
+        $viewName = $viewMap[$printType] ?? 'locations.print';
 
-        return view('locations.print', compact('locations'));
+        return view($viewName, compact('locations', 'printType', 'arrowDirection'));
     }
 
     public function bulkDestroy(Request $request)
