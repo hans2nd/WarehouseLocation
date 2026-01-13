@@ -143,4 +143,12 @@ class LocationController extends Controller
         WarehouseLocation::findOrFail($id)->delete();
         return back()->with('success', 'Lokasi berhasil dihapus');
     }
+
+    // Kosongkan Semua Data
+    public function truncate()
+    {
+        $count = WarehouseLocation::count();
+        WarehouseLocation::truncate();
+        return back()->with('success', 'Semua data (' . $count . ' lokasi) berhasil dihapus.');
+    }
 }

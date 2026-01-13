@@ -17,6 +17,11 @@
             @csrf
         </form>
 
+        {{-- Form Truncate (Hidden) --}}
+        <form id="truncate-form" action="{{ route('locations.truncate') }}" method="POST" class="hidden">
+            @csrf
+        </form>
+
         {{-- Header Halaman --}}
         <div
             class="p-6 bg-white border-b border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -46,6 +51,17 @@
                             </path>
                         </svg>
                         Hapus Terpilih
+                    </button>
+
+                    {{-- TOMBOL KOSONGKAN SEMUA --}}
+                    <button type="button" onclick="confirmTruncate()"
+                        class="inline-flex items-center justify-center bg-red-800 text-gray-700 hover:bg-red-700 px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z">
+                            </path>
+                        </svg>
+                        Kosongkan Semua
                     </button>
 
                     {{-- TOMBOL PRINT BATCH --}}
@@ -272,6 +288,50 @@
                     form.submit();
                 }
             })
+        }
+
+        function confirmTruncate() {
+            Swal.fire({
+                title: '⚠️ Kosongkan Semua Data?',
+                html: `
+                    <p class="text-gray-600 mb-4">Aksi ini akan menghapus <strong>SEMUA</strong> data lokasi gudang secara permanen.</p>
+                    <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 12px; margin-top: 12px;">
+                        <p style="color: #991b1b; font-size: 14px; font-weight: 600;">🚨 Peringatan!</p>
+                        <p style="color: #7f1d1d; font-size: 13px;">Data yang sudah dihapus tidak dapat dikembalikan.</p>
+                    </div>
+                `,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ea580c',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Ya, Kosongkan Semua!',
+                cancelButtonText: 'Batal',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Konfirmasi kedua untuk keamanan
+                    Swal.fire({
+                        title: 'Konfirmasi Terakhir',
+                        text: 'Ketik "HAPUS" untuk mengkonfirmasi penghapusan semua data:',
+                        input: 'text',
+                        inputPlaceholder: 'Ketik HAPUS',
+                        showCancelButton: true,
+                        confirmButtonColor: '#dc2626',
+                        cancelButtonColor: '#6b7280',
+                        confirmButtonText: 'Hapus Permanen',
+                        cancelButtonText: 'Batal',
+                        inputValidator: (value) => {
+                            if (value !== 'HAPUS') {
+                                return 'Ketik "HAPUS" dengan benar untuk melanjutkan';
+                            }
+                        }
+                    }).then((result2) => {
+                        if (result2.isConfirmed) {
+                            document.getElementById('truncate-form').submit();
+                        }
+                    });
+                }
+            });
         }
 
         // Loading Import dengan SweetAlert Progress
