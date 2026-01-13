@@ -72,14 +72,14 @@
                 </div>
 
                 {{-- Form Import (Baris Terpisah) --}}
-                <form action="{{ route('locations.import') }}" method="POST" enctype="multipart/form-data"
-                    class="flex gap-2 w-full sm:w-auto">
+                <form id="import-form" action="{{ route('locations.import') }}" method="POST" enctype="multipart/form-data"
+                    class="flex gap-2 w-full sm:w-auto" onsubmit="showImportLoading()">
                     @csrf
                     <div class="flex rounded-md shadow-sm w-full">
-                        <input type="file" name="file"
+                        <input type="file" name="file" id="import-file"
                             class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-l-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 border border-gray-300 rounded-l-lg"
                             required>
-                        <button type="submit"
+                        <button type="submit" id="import-btn"
                             class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-r-lg text-sm font-medium transition -ml-px whitespace-nowrap">
                             Import
                         </button>
@@ -236,6 +236,8 @@
         </div>
     </div>
 
+
+
     <script>
         function setFormToPrint() {
             let form = document.getElementById('print-form');
@@ -271,5 +273,71 @@
                 }
             })
         }
+
+        // Loading Import dengan SweetAlert Progress
+        function showImportLoading() {
+            const fileInput = document.getElementById('import-file');
+            if (!fileInput.files.length) {
+                return false;
+            }
+            
+            const importBtn = document.getElementById('import-btn');
+            importBtn.disabled = true;
+            
+            // Tampilkan SweetAlert dengan progress bar
+            Swal.fire({
+                title: 'Mengimport Data...',
+                html: `
+                    <p class="mb-4">Mohon tunggu, proses import sedang berjalan.</p>
+                    <div class="w-full bg-gray-200 rounded-full h-3 mb-2" style="background: #e5e7eb; border-radius: 9999px; height: 12px; overflow: hidden;">
+                        <div id="swal-progress-bar" style="height: 100%; width: 0%; background: linear-gradient(to right, #3b82f6, #2563eb); border-radius: 9999px; transition: width 0.3s ease-out;"></div>
+                    </div>
+                    <p id="swal-progress-text" class="text-sm text-gray-600">Memproses file...</p>
+                    <div style="margin-top: 16px; padding: 12px; background: #fffbeb; border: 1px solid #fcd34d; border-radius: 8px;">
+                        <p style="font-size: 12px; color: #b45309;">⚠️ Jangan tutup atau refresh halaman ini!</p>
+                    </div>
+                `,
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                didOpen: () => {
+                    // Animasi progress bar
+                    let progress = 0;
+                    const messages = [
+                        'Membaca file Excel...',
+                        'Memvalidasi data...',
+                        'Menyimpan ke database...',
+                        'Hampir selesai...'
+                    ];
+                    
+                    const progressBar = document.getElementById('swal-progress-bar');
+                    const progressText = document.getElementById('swal-progress-text');
+                    
+                    window.importProgressInterval = setInterval(() => {
+                        if (progress < 90) {
+                            progress += Math.random() * 15;
+                            if (progress > 90) progress = 90;
+                            if (progressBar) progressBar.style.width = progress + '%';
+                            
+                            // Update pesan
+                            const msgIndex = Math.min(Math.floor(progress / 25), messages.length - 1);
+                            if (progressText) progressText.textContent = messages[msgIndex];
+                        }
+                    }, 500);
+                }
+            });
+            
+            return true; // Lanjutkan form submission
+        }
+        
+        // Auto-close SweetAlert jika halaman reload (import selesai)
+        window.addEventListener('pageshow', function(event) {
+            if (event.persisted) {
+                Swal.close();
+                if (window.importProgressInterval) {
+                    clearInterval(window.importProgressInterval);
+                }
+            }
+        });
     </script>
 @endsection

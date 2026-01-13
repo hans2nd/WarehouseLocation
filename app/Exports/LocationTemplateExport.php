@@ -14,8 +14,8 @@ class LocationTemplateExport implements FromArray, WithHeadings, WithStyles, Sho
     {
         // Kita berikan 1 baris contoh data dummy agar user paham formatnya
         return [
-            ['AC.0.1', 'JKT-01', 'Gudang A', 'Rak A - Level 1', 10, 1, 'Yes'],
-            ['AC.0.2', 'BDG-01', 'Gudang B', 'Rak A - Level 2', 20, 1, 'No'],
+            ['AC.0.1', 'JKT-01', 'Gudang A', 'Rak A - Level 1', 10, 1, 'yes'],
+            ['AC.0.2', 'BDG-01', 'Gudang B', 'Rak A - Level 2', 20, 1, 'no'],
         ];
     }
 
