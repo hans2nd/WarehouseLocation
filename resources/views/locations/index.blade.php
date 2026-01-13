@@ -9,6 +9,8 @@
             document.querySelectorAll('.loc-checkbox').forEach((el) => {
                 el.checked = this.selectAll;
             });
+            // Update counter setelah toggle
+            if (typeof updateSelectionCount === 'function') updateSelectionCount();
         }
     }">
 
@@ -169,6 +171,41 @@
             </form>
         </div>
 
+        {{-- Info Bar: Jumlah Lokasi Terpilih --}}
+        <div class="px-6 py-3 bg-blue-50 border-b border-blue-100 flex flex-wrap items-center justify-between gap-2">
+            <div class="flex items-center gap-4 text-sm">
+                {{-- Total Data --}}
+                <div class="flex items-center gap-2 text-gray-600">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                    </svg>
+                    <span>Total: <strong class="text-gray-800">{{ $locations->total() }}</strong> lokasi</span>
+                </div>
+                
+                {{-- Separator --}}
+                <span class="text-gray-300">|</span>
+                
+                {{-- Terpilih (Dynamic dengan JS) --}}
+                <div class="flex items-center gap-2">
+                    <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <span class="text-blue-700">
+                        Terpilih: <strong id="selected-count">0</strong> dari <strong>{{ $locations->count() }}</strong> di halaman ini
+                    </span>
+                </div>
+            </div>
+            
+            {{-- Quick Actions saat ada yang dipilih --}}
+            <div id="selection-actions" class="hidden flex items-center gap-2">
+                <span class="text-xs text-gray-500 mr-2">Aksi cepat:</span>
+                <button type="button" onclick="clearSelection()" 
+                    class="text-xs bg-white border border-gray-300 text-gray-600 hover:bg-gray-50 px-2 py-1 rounded transition">
+                    Batalkan Pilihan
+                </button>
+            </div>
+        </div>
+
         {{-- Alert Success --}}
         @if (session('success'))
             <div
@@ -255,6 +292,52 @@
 
 
     <script>
+        // Update jumlah lokasi yang dipilih
+        function updateSelectionCount() {
+            const checkboxes = document.querySelectorAll('.loc-checkbox:checked');
+            const count = checkboxes.length;
+            const countElement = document.getElementById('selected-count');
+            const actionsElement = document.getElementById('selection-actions');
+            
+            if (countElement) {
+                countElement.textContent = count;
+                
+                // Highlight jika ada yang dipilih
+                if (count > 0) {
+                    countElement.classList.add('text-blue-600', 'bg-blue-100', 'px-2', 'py-0.5', 'rounded');
+                    actionsElement.classList.remove('hidden');
+                } else {
+                    countElement.classList.remove('text-blue-600', 'bg-blue-100', 'px-2', 'py-0.5', 'rounded');
+                    actionsElement.classList.add('hidden');
+                }
+            }
+        }
+        
+        // Batalkan semua pilihan
+        function clearSelection() {
+            document.querySelectorAll('.loc-checkbox').forEach(cb => cb.checked = false);
+            const selectAllCheckbox = document.querySelector('[x-data] input[type="checkbox"]');
+            if (selectAllCheckbox) selectAllCheckbox.checked = false;
+            updateSelectionCount();
+        }
+        
+        // Event listener untuk checkbox
+        document.addEventListener('DOMContentLoaded', function() {
+            // Update count saat checkbox individual berubah
+            document.querySelectorAll('.loc-checkbox').forEach(cb => {
+                cb.addEventListener('change', updateSelectionCount);
+            });
+            
+            // Observer untuk checkbox Select All (Alpine.js)
+            const observer = new MutationObserver(updateSelectionCount);
+            document.querySelectorAll('.loc-checkbox').forEach(cb => {
+                observer.observe(cb, { attributes: true, attributeFilter: ['checked'] });
+            });
+            
+            // Initial count
+            updateSelectionCount();
+        });
+
         function setFormToPrint() {
             let form = document.getElementById('print-form');
             form.action = "{{ route('locations.print_batch') }}";
