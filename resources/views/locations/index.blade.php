@@ -357,17 +357,9 @@
                 html: `
                     <p class="text-gray-600 mb-4">Pilih layout cetak untuk <strong>${checkboxes.length}</strong> lokasi:</p>
                     <div style="display: flex; flex-direction: column; gap: 12px; text-align: left;">
-                        <label style="display: flex; align-items: center; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; cursor: pointer; transition: all 0.2s;" 
-                               onmouseover="this.style.borderColor='#3b82f6'" onmouseout="this.style.borderColor='#e5e7eb'">
-                            <input type="radio" name="swal-print-type" value="standard" checked style="margin-right: 12px; width: 18px; height: 18px;">
-                            <div>
-                                <strong style="color: #1f2937;">📋 Standard</strong>
-                                <p style="font-size: 12px; color: #6b7280; margin: 0;">QR Code standar dengan kode lokasi</p>
-                            </div>
-                        </label>
                         <label style="display: flex; align-items: center; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; cursor: pointer; transition: all 0.2s;"
                                onmouseover="this.style.borderColor='#3b82f6'" onmouseout="this.style.borderColor='#e5e7eb'">
-                            <input type="radio" name="swal-print-type" value="flooring" style="margin-right: 12px; width: 18px; height: 18px;">
+                            <input type="radio" name="swal-print-type" value="flooring" checked style="margin-right: 12px; width: 18px; height: 18px;">
                             <div>
                                 <strong style="color: #1f2937;">🏭 Flooring</strong>
                                 <p style="font-size: 12px; color: #6b7280; margin: 0;">Layout grid untuk lantai</p>
@@ -390,50 +382,17 @@
                             </div>
                         </label>
                     </div>
-                    
-                    {{-- Opsi Arah Panah --}}
-                    <div id="arrow-options" style="margin-top: 16px; padding: 12px; background: #f3f4f6; border-radius: 8px; display: none;">
-                        <p style="font-weight: 600; color: #374151; margin-bottom: 8px;">↔ Arah Panah:</p>
-                        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                            <label style="display: flex; align-items: center; padding: 8px 12px; background: white; border: 1px solid #d1d5db; border-radius: 6px; cursor: pointer;">
-                                <input type="radio" name="swal-arrow-dir" value="alternate" checked style="margin-right: 8px;">
-                                <span style="font-size: 13px;">↔ Bergantian</span>
-                            </label>
-                            <label style="display: flex; align-items: center; padding: 8px 12px; background: white; border: 1px solid #d1d5db; border-radius: 6px; cursor: pointer;">
-                                <input type="radio" name="swal-arrow-dir" value="left" style="margin-right: 8px;">
-                                <span style="font-size: 13px;">← Semua Kiri</span>
-                            </label>
-                            <label style="display: flex; align-items: center; padding: 8px 12px; background: white; border: 1px solid #d1d5db; border-radius: 6px; cursor: pointer;">
-                                <input type="radio" name="swal-arrow-dir" value="right" style="margin-right: 8px;">
-                                <span style="font-size: 13px;">→ Semua Kanan</span>
-                            </label>
-                        </div>
-                    </div>
+                    <p style="font-size: 11px; color: #9ca3af; margin-top: 12px; text-align: center;">💡 Ukuran QR & arah panah dapat diatur di halaman preview</p>
                 `,
                 showCancelButton: true,
                 confirmButtonText: 'Cetak',
                 cancelButtonText: 'Batal',
                 confirmButtonColor: '#1f2937',
-                didOpen: () => {
-                    // Show/hide arrow options based on print type selection
-                    const radios = document.querySelectorAll('input[name="swal-print-type"]');
-                    const arrowOptions = document.getElementById('arrow-options');
-                    radios.forEach(radio => {
-                        radio.addEventListener('change', () => {
-                            if (['racking', 'flooring', 'double_deep'].includes(radio.value)) {
-                                arrowOptions.style.display = 'block';
-                            } else {
-                                arrowOptions.style.display = 'none';
-                            }
-                        });
-                    });
-                },
                 preConfirm: () => {
                     const selectedType = document.querySelector('input[name="swal-print-type"]:checked');
-                    const selectedArrow = document.querySelector('input[name="swal-arrow-dir"]:checked');
                     return {
-                        type: selectedType ? selectedType.value : 'standard',
-                        arrow: selectedArrow ? selectedArrow.value : 'alternate'
+                        type: selectedType ? selectedType.value : 'flooring',
+                        arrow: 'alternate'
                     };
                 }
             }).then((result) => {
