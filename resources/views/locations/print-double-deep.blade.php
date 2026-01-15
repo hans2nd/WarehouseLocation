@@ -113,6 +113,15 @@
             font-weight: bold;
             margin-top: 2mm;
         }
+        
+        /* Floor Level Label */
+        .floor-label {
+            font-size: var(--floor-font-size, 12px);
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 1mm;
+            text-transform: uppercase;
+        }
 
         /* Footer Row */
         .footer-cell {
@@ -258,6 +267,23 @@
                 <label>Font Lokasi: <span id="font-size-value" class="slider-value">11px</span></label>
                 <input type="range" id="font-size-slider" min="8" max="18" value="11" oninput="updateFontSize(this.value)">
             </div>
+            <div class="slider-group">
+                <label>Font Lantai: <span id="floor-font-size-value" class="slider-value">12px</span></label>
+                <input type="range" id="floor-font-size-slider" min="8" max="20" value="12" oninput="updateFloorFontSize(this.value)">
+            </div>
+        </div>
+        
+        {{-- Section: Label Lantai --}}
+        <div class="control-section">
+            <h4>🏢 Label Lantai</h4>
+            <div class="slider-group">
+                <label>Teks Label:</label>
+                <input type="text" id="floor-label-text" value="LANTAI" 
+                    class="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                    style="margin-top: 4px;"
+                    oninput="updateFloorLabels()">
+            </div>
+            <p style="font-size: 10px; color: #999; margin-top: 4px;">Contoh: LANTAI, LEVEL, RACK, dll.</p>
         </div>
         
         {{-- Section: Arah Panah --}}
@@ -352,6 +378,12 @@
                 @foreach($row as $loc)
                 <div class="qr-cell {{ !$loc ? 'empty' : '' }}">
                     @if($loc)
+                    @php
+                        // Extract floor level from 4th segment (D.A.1.2.a -> 2)
+                        $segments = explode('.', $loc->location_code);
+                        $floorLevel = $segments[3] ?? '';
+                    @endphp
+                    <span class="floor-label" data-floor="{{ $floorLevel }}">LANTAI {{ $floorLevel }}</span>
                     <div class="qr-code">
                         {!! QrCode::size(100)->generate($loc->location_code) !!}
                     </div>
@@ -386,6 +418,23 @@
         function updateFontSize(value) {
             document.documentElement.style.setProperty('--font-size', value + 'px');
             document.getElementById('font-size-value').textContent = value + 'px';
+        }
+        
+        // Update Floor Font size dynamically
+        function updateFloorFontSize(value) {
+            document.documentElement.style.setProperty('--floor-font-size', value + 'px');
+            document.getElementById('floor-font-size-value').textContent = value + 'px';
+        }
+        
+        // Update Floor Labels text
+        function updateFloorLabels() {
+            const labelText = document.getElementById('floor-label-text').value || 'LANTAI';
+            const floorLabels = document.querySelectorAll('.floor-label');
+            
+            floorLabels.forEach(label => {
+                const floorNumber = label.getAttribute('data-floor');
+                label.textContent = labelText + ' ' + floorNumber;
+            });
         }
         
         // Toggle individual arrow on click

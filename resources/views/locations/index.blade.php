@@ -373,14 +373,6 @@
                                 <p style="font-size: 12px; color: #6b7280; margin: 0;">Layout grid dengan panah arah untuk rak</p>
                             </div>
                         </label>
-                        <label style="display: flex; align-items: center; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; cursor: pointer; transition: all 0.2s;"
-                               onmouseover="this.style.borderColor='#3b82f6'" onmouseout="this.style.borderColor='#e5e7eb'">
-                            <input type="radio" name="swal-print-type" value="double_deep" style="margin-right: 12px; width: 18px; height: 18px;">
-                            <div>
-                                <strong style="color: #1f2937;">📚 Double Deep</strong>
-                                <p style="font-size: 12px; color: #6b7280; margin: 0;">Layout grid dengan panah untuk double deep</p>
-                            </div>
-                        </label>
                     </div>
                     <p style="font-size: 11px; color: #9ca3af; margin-top: 12px; text-align: center;">💡 Ukuran QR & arah panah dapat diatur di halaman preview</p>
                 `,
