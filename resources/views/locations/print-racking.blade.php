@@ -8,7 +8,7 @@
         @media print {
             @page {
                 size: A4 portrait;
-                margin: 5mm;
+                margin: 3mm;
             }
 
             body {
@@ -44,18 +44,11 @@
         .page {
             width: 210mm;
             min-height: 297mm;
-            padding: 3mm;
+            padding: 2mm;
             margin: 0 auto;
         }
 
-        .page-title {
-            text-align: center;
-            font-size: 12px;
-            font-weight: bold;
-            margin-bottom: 2mm;
-        }
-
-        /* Grid Container */
+        /* Grid Container - 4 columns */
         .rack-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -66,43 +59,44 @@
         /* Arrow Header Row */
         .arrow-cell {
             border: 1px solid black;
-            padding: 2mm;
+            padding: 1.5mm;
             text-align: center;
-            height: 20mm;
+            height: 14mm;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
+            background: #e5e7eb;
             cursor: pointer;
             transition: background-color 0.2s ease;
         }
         
         .arrow-cell:hover {
-            background-color: #f0f0f0;
+            background-color: #d1d5db;
         }
 
         .circle-marker {
-            font-size: 14px;
+            font-size: 10px;
             font-weight: bold;
-            margin-bottom: 1mm;
+            margin-bottom: 0.5mm;
         }
 
         .arrow-left, .arrow-right {
-            width: 30mm;
-            height: 10mm;
+            width: 20mm;
+            height: 7mm;
             transition: transform 0.3s ease;
         }
 
-        /* QR Cell */
+        /* QR Cell - Compact untuk 5 rows per page */
         .qr-cell {
             border: 1px solid black;
-            padding: 2mm;
+            padding: 1.5mm;
             text-align: center;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            min-height: 45mm;
+            height: 50mm;
         }
 
         .qr-cell.empty {
@@ -110,19 +104,19 @@
         }
 
         .qr-code svg {
-            width: var(--qr-size, 28mm);
-            height: var(--qr-size, 28mm);
+            width: var(--qr-size, 22mm);
+            height: var(--qr-size, 22mm);
         }
 
         .location-code {
-            font-size: var(--font-size, 11px);
+            font-size: var(--font-size, 9px);
             font-weight: bold;
-            margin-top: 2mm;
+            margin-top: 1mm;
         }
         
         /* Floor Level Label */
         .floor-label {
-            font-size: var(--floor-font-size, 12px);
+            font-size: var(--floor-font-size, 10px);
             font-weight: bold;
             color: #333;
             margin-bottom: 1mm;
@@ -132,16 +126,17 @@
         /* Footer Row */
         .footer-cell {
             border: 1px solid black;
-            padding: 2mm;
+            padding: 1.5mm;
             text-align: center;
-            height: 8mm;
+            height: 6mm;
             display: flex;
             justify-content: center;
             align-items: center;
+            background: #e5e7eb;
         }
 
         .footer-marker {
-            font-size: 14px;
+            font-size: 10px;
             font-weight: bold;
         }
         
@@ -156,7 +151,9 @@
             padding: 16px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.15);
             z-index: 1000;
-            min-width: 200px;
+            min-width: 220px;
+            max-height: 90vh;
+            overflow-y: auto;
         }
         
         .control-panel h3 {
@@ -253,28 +250,56 @@
             font-weight: bold;
             color: #333;
         }
+        
+        .text-input {
+            width: 100%;
+            padding: 6px 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-top: 4px;
+        }
+        
+        .text-input:focus {
+            outline: none;
+            border-color: #2563eb;
+        }
+
+        .info-badge {
+            background: #dbeafe;
+            color: #1e40af;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            margin-bottom: 12px;
+            text-align: center;
+        }
     </style>
 </head>
 
 <body>
     {{-- Floating Control Panel --}}
     <div class="control-panel no-print">
-        <h3>⚙️ Pengaturan Cetak</h3>
+        <h3>⚙️ Pengaturan Cetak Racking</h3>
+        
+        <div class="info-badge">
+            📐 A4: 4 kolom × 5 baris = 20 lokasi/halaman
+        </div>
         
         {{-- Section: Ukuran --}}
         <div class="control-section">
             <h4>📐 Ukuran</h4>
             <div class="slider-group">
-                <label>QR Code: <span id="qr-size-value" class="slider-value">28mm</span></label>
-                <input type="range" id="qr-size-slider" min="20" max="40" value="28" oninput="updateQRSize(this.value)">
+                <label>QR Code: <span id="qr-size-value" class="slider-value">22mm</span></label>
+                <input type="range" id="qr-size-slider" min="15" max="32" value="22" oninput="updateQRSize(this.value)">
             </div>
             <div class="slider-group">
-                <label>Font Lokasi: <span id="font-size-value" class="slider-value">11px</span></label>
-                <input type="range" id="font-size-slider" min="8" max="18" value="11" oninput="updateFontSize(this.value)">
+                <label>Font Lokasi: <span id="font-size-value" class="slider-value">9px</span></label>
+                <input type="range" id="font-size-slider" min="6" max="14" value="9" oninput="updateFontSize(this.value)">
             </div>
             <div class="slider-group">
-                <label>Font Lantai: <span id="floor-font-size-value" class="slider-value">12px</span></label>
-                <input type="range" id="floor-font-size-slider" min="8" max="20" value="12" oninput="updateFloorFontSize(this.value)">
+                <label>Font Lantai: <span id="floor-font-size-value" class="slider-value">10px</span></label>
+                <input type="range" id="floor-font-size-slider" min="6" max="16" value="10" oninput="updateFloorFontSize(this.value)">
             </div>
         </div>
         
@@ -283,32 +308,28 @@
             <h4>🏢 Label Lantai</h4>
             <div class="slider-group">
                 <label>Teks Label:</label>
-                <input type="text" id="floor-label-text" value="LANTAI" 
-                    class="w-full px-2 py-1 border border-gray-300 rounded text-sm"
-                    style="margin-top: 4px;"
-                    oninput="updateFloorLabels()">
+                <input type="text" id="floor-label-text" value="LANTAI" class="text-input" oninput="updateFloorLabels()">
             </div>
-            <p style="font-size: 10px; color: #999; margin-top: 4px;">Contoh: LANTAI, LEVEL, RACK, dll.</p>
         </div>
         
         {{-- Section: Arah Panah --}}
         <div class="control-section">
             <h4>🎯 Arah Panah</h4>
             <button class="control-btn" onclick="setAllArrows('left')">
-            <svg viewBox="0 0 100 30">
-                <polygon points="0,15 20,0 20,10 100,10 100,20 20,20 20,30" fill="currentColor"/>
-            </svg>
-            Semua Kiri
-        </button>
-        <button class="control-btn" onclick="setAllArrows('right')">
-            <svg viewBox="0 0 100 30">
-                <polygon points="100,15 80,0 80,10 0,10 0,20 80,20 80,30" fill="currentColor"/>
-            </svg>
-            Semua Kanan
-        </button>
-        <button class="control-btn" onclick="setAllArrows('alternate')">
-            ↔ Bergantian
-        </button>
+                <svg viewBox="0 0 100 30">
+                    <polygon points="0,15 20,0 20,10 100,10 100,20 20,20 20,30" fill="currentColor"/>
+                </svg>
+                Semua Kiri
+            </button>
+            <button class="control-btn" onclick="setAllArrows('right')">
+                <svg viewBox="0 0 100 30">
+                    <polygon points="100,15 80,0 80,10 0,10 0,20 80,20 80,30" fill="currentColor"/>
+                </svg>
+                Semua Kanan
+            </button>
+            <button class="control-btn" onclick="setAllArrows('alternate')">
+                ↔ Bergantian
+            </button>
         </div>
         
         <button class="control-btn primary" onclick="window.print()">
@@ -321,27 +342,93 @@
         // Default arrow direction
         $arrowDir = $arrowDirection ?? 'alternate';
         
-        // 4 columns x 5 rows = 20 QR per page
-        $qrPerPage = 20;
-        $chunks = $locations->chunk($qrPerPage);
+        // Parse and group locations
+        // Format: ZONE.ROW.COLUMN.LEVEL (e.g., D.A.1.1, D.A.1.3)
+        $parsed = [];
+        
+        foreach($locations as $loc) {
+            $code = $loc->location_code;
+            $segments = explode('.', $code);
+            
+            if (count($segments) >= 4) {
+                $zone = $segments[0];            // D
+                $row = $segments[1];             // A
+                $column = (int)$segments[2];     // 1, 2, etc.
+                $level = (int)$segments[3];      // 1, 2, 3, 4, 5
+                
+                // Group key: ZONE.ROW (e.g., D.A)
+                $groupKey = "{$zone}.{$row}";
+                
+                $parsed[] = [
+                    'location' => $loc,
+                    'groupKey' => $groupKey,
+                    'column' => $column,
+                    'level' => $level,
+                ];
+            }
+        }
+        
+        // Group by groupKey (ZONE.ROW)
+        $groups = [];
+        foreach ($parsed as $item) {
+            $groups[$item['groupKey']][] = $item;
+        }
+        
+        // Sort groups naturally
+        ksort($groups, SORT_NATURAL);
+        
+        // Build rows for each group
+        // Layout: 4 columns per row, arranged by level from high to low
+        $allRows = [];
+        
+        foreach ($groups as $groupKey => $items) {
+            // Get unique columns and sort them
+            $columns = array_unique(array_column($items, 'column'));
+            sort($columns, SORT_NUMERIC);
+            
+            // Group columns in sets of 4 for each page row
+            $columnSets = array_chunk($columns, 4);
+            
+            // Index items by column, level for quick lookup
+            $indexed = [];
+            foreach ($items as $item) {
+                $indexed[$item['column']][$item['level']] = $item;
+            }
+            
+            // For each column set, create rows from maxLevel down to 1
+            foreach ($columnSets as $columnSet) {
+                // Find max level for this specific column set
+                $setMaxLevel = 0;
+                foreach ($columnSet as $col) {
+                    if (isset($indexed[$col])) {
+                        $setMaxLevel = max($setMaxLevel, max(array_keys($indexed[$col])));
+                    }
+                }
+                
+                // Create rows from highest level to lowest (top to bottom in print)
+                for ($level = $setMaxLevel; $level >= 1; $level--) {
+                    $row = ['level' => $level];
+                    for ($i = 0; $i < 4; $i++) {
+                        $col = $columnSet[$i] ?? null;
+                        $row['col' . ($i + 1)] = ($col !== null && isset($indexed[$col][$level])) 
+                            ? $indexed[$col][$level] 
+                            : null;
+                    }
+                    $allRows[] = $row;
+                }
+            }
+        }
+        
+        // Chunk rows into pages (5 rows per page = 20 locations)
+        $rowsPerPage = 5;
+        $pages = array_chunk($allRows, $rowsPerPage);
+        
         $pageNumber = 0;
     @endphp
 
-    @foreach($chunks as $chunk)
+    @foreach($pages as $pageIndex => $pageRows)
     @php
         $pageNumber++;
-        $items = $chunk->values();
-        
-        // Fill to make complete rows (5 rows x 4 columns)
-        $totalItems = count($items);
-        $rows = [];
-        for ($row = 0; $row < 5; $row++) {
-            $rows[$row] = [];
-            for ($col = 0; $col < 4; $col++) {
-                $index = $row * 4 + $col;
-                $rows[$row][$col] = $items[$index] ?? null;
-            }
-        }
     @endphp
     
     <div class="page {{ !$loop->last ? 'page-break' : '' }}">
@@ -379,24 +466,51 @@
             </div>
             @endfor
 
-            {{-- QR Code Rows (5 rows) --}}
-            @foreach($rows as $row)
-                @foreach($row as $loc)
-                <div class="qr-cell {{ !$loc ? 'empty' : '' }}">
-                    @if($loc)
-                    @php
-                        // Extract floor level from 4th segment (D.A.1.2.a -> 2)
-                        $segments = explode('.', $loc->location_code);
-                        $floorLevel = $segments[3] ?? '';
-                    @endphp
-                    <span class="floor-label" data-floor="{{ $floorLevel }}">LANTAI {{ $floorLevel }}</span>
+            {{-- QR Code Rows (5 rows per page) --}}
+            @foreach($pageRows as $rowData)
+                {{-- Column 1 --}}
+                <div class="qr-cell {{ !$rowData['col1'] ? 'empty' : '' }}">
+                    @if($rowData['col1'])
+                    <span class="floor-label" data-floor="{{ $rowData['level'] }}">LANTAI {{ $rowData['level'] }}</span>
                     <div class="qr-code">
-                        {!! QrCode::size(100)->generate($loc->location_code) !!}
+                        {!! QrCode::size(80)->generate($rowData['col1']['location']->location_code) !!}
                     </div>
-                    <span class="location-code">{{ $loc->location_code }}</span>
+                    <span class="location-code">{{ $rowData['col1']['location']->location_code }}</span>
                     @endif
                 </div>
-                @endforeach
+                
+                {{-- Column 2 --}}
+                <div class="qr-cell {{ !$rowData['col2'] ? 'empty' : '' }}">
+                    @if($rowData['col2'])
+                    <span class="floor-label" data-floor="{{ $rowData['level'] }}">LANTAI {{ $rowData['level'] }}</span>
+                    <div class="qr-code">
+                        {!! QrCode::size(80)->generate($rowData['col2']['location']->location_code) !!}
+                    </div>
+                    <span class="location-code">{{ $rowData['col2']['location']->location_code }}</span>
+                    @endif
+                </div>
+                
+                {{-- Column 3 --}}
+                <div class="qr-cell {{ !$rowData['col3'] ? 'empty' : '' }}">
+                    @if($rowData['col3'])
+                    <span class="floor-label" data-floor="{{ $rowData['level'] }}">LANTAI {{ $rowData['level'] }}</span>
+                    <div class="qr-code">
+                        {!! QrCode::size(80)->generate($rowData['col3']['location']->location_code) !!}
+                    </div>
+                    <span class="location-code">{{ $rowData['col3']['location']->location_code }}</span>
+                    @endif
+                </div>
+                
+                {{-- Column 4 --}}
+                <div class="qr-cell {{ !$rowData['col4'] ? 'empty' : '' }}">
+                    @if($rowData['col4'])
+                    <span class="floor-label" data-floor="{{ $rowData['level'] }}">LANTAI {{ $rowData['level'] }}</span>
+                    <div class="qr-code">
+                        {!! QrCode::size(80)->generate($rowData['col4']['location']->location_code) !!}
+                    </div>
+                    <span class="location-code">{{ $rowData['col4']['location']->location_code }}</span>
+                    @endif
+                </div>
             @endforeach
 
             {{-- Footer Row: Circle Markers --}}
@@ -477,4 +591,3 @@
 </body>
 
 </html>
-
