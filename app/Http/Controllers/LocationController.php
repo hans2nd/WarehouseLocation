@@ -13,7 +13,7 @@ class LocationController extends Controller
 {
     public function index(Request $request)
     {
-        $query = WarehouseLocation::query();
+        $query = WarehouseLocation::query()->orderBy('id', 'asc');
 
         // Filter berdasarkan pencarian
         if ($request->filled('search')) {
