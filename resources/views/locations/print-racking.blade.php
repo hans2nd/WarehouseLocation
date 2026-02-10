@@ -377,9 +377,11 @@
         // Sort groups naturally
         ksort($groups, SORT_NATURAL);
         
-        // Build rows for each group
+        // Build pages for each group
         // Layout: 4 columns per row, arranged by level from high to low
-        $allRows = [];
+        // Each column set gets its own pages (no mixing column sets on the same page)
+        $rowsPerPage = 5;
+        $pages = [];
         
         foreach ($groups as $groupKey => $items) {
             // Get unique columns and sort them
@@ -395,7 +397,7 @@
                 $indexed[$item['column']][$item['level']] = $item;
             }
             
-            // For each column set, create rows from maxLevel down to 1
+            // For each column set, create rows and paginate independently
             foreach ($columnSets as $columnSet) {
                 // Find max level for this specific column set
                 $setMaxLevel = 0;
@@ -406,6 +408,7 @@
                 }
                 
                 // Create rows from highest level to lowest (top to bottom in print)
+                $setRows = [];
                 for ($level = $setMaxLevel; $level >= 1; $level--) {
                     $row = ['level' => $level];
                     for ($i = 0; $i < 4; $i++) {
@@ -414,14 +417,16 @@
                             ? $indexed[$col][$level] 
                             : null;
                     }
-                    $allRows[] = $row;
+                    $setRows[] = $row;
+                }
+                
+                // Paginate this column set independently
+                $setPages = array_chunk($setRows, $rowsPerPage);
+                foreach ($setPages as $page) {
+                    $pages[] = $page;
                 }
             }
         }
-        
-        // Chunk rows into pages (5 rows per page = 20 locations)
-        $rowsPerPage = 5;
-        $pages = array_chunk($allRows, $rowsPerPage);
         
         $pageNumber = 0;
     @endphp

@@ -421,9 +421,11 @@
         // Sort groups naturally
         ksort($groups, SORT_NATURAL);
         
-        // Build rows for each group
+        // Build pages for each group
         // Layout: Column pairs (1,2), (3,4), etc. with levels from high to low
-        $allRows = [];
+        // Each column pair gets its own pages (no mixing column pairs on the same page)
+        $rowsPerPage = 5;
+        $pages = [];
         
         foreach ($groups as $groupKey => $items) {
             // Get unique columns and sort them
@@ -446,7 +448,7 @@
                 $indexed[$item['column']][$item['level']][$item['depth']] = $item;
             }
             
-            // For each column pair, create rows from maxLevel down to 1
+            // For each column pair, create rows and paginate independently
             foreach ($columnPairs as $pair) {
                 $col1 = $pair[0];
                 $col2 = $pair[1];
@@ -461,8 +463,9 @@
                 }
                 
                 // Create rows from highest level to lowest (top to bottom in print)
+                $pairRows = [];
                 for ($level = $pairMaxLevel; $level >= 1; $level--) {
-                    $allRows[] = [
+                    $pairRows[] = [
                         'level' => $level,
                         // Column 1: Col1 Depth A (LUAR)
                         'col1' => $indexed[$col1][$level]['a'] ?? null,
@@ -474,12 +477,14 @@
                         'col4' => ($col2 !== null) ? ($indexed[$col2][$level]['b'] ?? null) : null,
                     ];
                 }
+                
+                // Paginate this column pair independently
+                $pairPages = array_chunk($pairRows, $rowsPerPage);
+                foreach ($pairPages as $page) {
+                    $pages[] = $page;
+                }
             }
         }
-        
-        // Chunk rows into pages (5 rows per page = 20 locations)
-        $rowsPerPage = 5;
-        $pages = array_chunk($allRows, $rowsPerPage);
         
         $pageNumber = 0;
     @endphp
