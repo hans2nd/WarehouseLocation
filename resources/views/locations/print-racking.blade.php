@@ -344,6 +344,7 @@
         
         // Parse and group locations
         // Format: ZONE.ROW.COLUMN.LEVEL (e.g., D.A.1.1, D.A.1.3)
+        // Ground Shelving: ZONE.ROW.COLUMN.LEVELBn (e.g., D.K.1.1B3, D.K.1.1B2, D.K.1.1B1)
         $parsed = [];
         
         foreach($locations as $loc) {
@@ -352,9 +353,17 @@
             
             if (count($segments) >= 4) {
                 $zone = $segments[0];            // D
-                $row = $segments[1];             // A
+                $row = $segments[1];             // K
                 $column = (int)$segments[2];     // 1, 2, etc.
-                $level = (int)$segments[3];      // 1, 2, 3, 4, 5
+                
+                // Check for ground shelving sub-level (e.g., 1A3, 1B2, 1C1)
+                $subLevel = null;
+                if (preg_match('/^(\d+)([A-Za-z]\d+)$/', $segments[3], $matches)) {
+                    $level = (int)$matches[1];           // 1
+                    $subLevel = strtoupper($matches[2]); // A3, B2, C1, etc.
+                } else {
+                    $level = (int)$segments[3];           // 1, 2, 3, 4, 5
+                }
                 
                 // Group key: ZONE.ROW (e.g., D.A)
                 $groupKey = "{$zone}.{$row}";
@@ -364,6 +373,7 @@
                     'groupKey' => $groupKey,
                     'column' => $column,
                     'level' => $level,
+                    'subLevel' => $subLevel,
                 ];
             }
         }
@@ -379,6 +389,7 @@
         
         // Build pages for each group
         // Layout: 4 columns per row, arranged by level from high to low
+        // Ground shelving sub-levels create extra rows within their floor level
         // Each column set gets its own pages (no mixing column sets on the same page)
         $rowsPerPage = 5;
         $pages = [];
@@ -391,10 +402,12 @@
             // Group columns in sets of 4 for each page row
             $columnSets = array_chunk($columns, 4);
             
-            // Index items by column, level for quick lookup
+            // Index items by column, level, subLevel for quick lookup
+            // Normal: $indexed[$col][$level][null] = $item
+            // Ground shelving: $indexed[$col][$level]['B3'] = $item
             $indexed = [];
             foreach ($items as $item) {
-                $indexed[$item['column']][$item['level']] = $item;
+                $indexed[$item['column']][$item['level']][$item['subLevel']] = $item;
             }
             
             // For each column set, create rows and paginate independently
@@ -410,14 +423,62 @@
                 // Create rows from highest level to lowest (top to bottom in print)
                 $setRows = [];
                 for ($level = $setMaxLevel; $level >= 1; $level--) {
-                    $row = ['level' => $level];
-                    for ($i = 0; $i < 4; $i++) {
-                        $col = $columnSet[$i] ?? null;
-                        $row['col' . ($i + 1)] = ($col !== null && isset($indexed[$col][$level])) 
-                            ? $indexed[$col][$level] 
-                            : null;
+                    // Collect all sub-levels across all columns in this set for this level
+                    $allSubLevels = [];
+                    foreach ($columnSet as $col) {
+                        if (isset($indexed[$col][$level])) {
+                            foreach (array_keys($indexed[$col][$level]) as $sl) {
+                                if ($sl !== null && $sl !== '' && !in_array($sl, $allSubLevels)) {
+                                    $allSubLevels[] = $sl;
+                                }
+                            }
+                        }
                     }
-                    $setRows[] = $row;
+                    
+                    if (!empty($allSubLevels)) {
+                        // Ground shelving: sort sub-levels descending (B3, B2, B1)
+                        rsort($allSubLevels, SORT_NATURAL);
+                        
+                        foreach ($allSubLevels as $sl) {
+                            $row = ['level' => $level, 'subLevel' => $sl];
+                            for ($i = 0; $i < 4; $i++) {
+                                $col = $columnSet[$i] ?? null;
+                                $row['col' . ($i + 1)] = ($col !== null && isset($indexed[$col][$level][$sl])) 
+                                    ? $indexed[$col][$level][$sl] 
+                                    : null;
+                            }
+                            $setRows[] = $row;
+                        }
+                        
+                        // Also check if there are normal items (null sub-level) at this level
+                        $hasNormal = false;
+                        foreach ($columnSet as $col) {
+                            if (isset($indexed[$col][$level][null])) {
+                                $hasNormal = true;
+                                break;
+                            }
+                        }
+                        if ($hasNormal) {
+                            $row = ['level' => $level, 'subLevel' => null];
+                            for ($i = 0; $i < 4; $i++) {
+                                $col = $columnSet[$i] ?? null;
+                                $row['col' . ($i + 1)] = ($col !== null && isset($indexed[$col][$level][null])) 
+                                    ? $indexed[$col][$level][null] 
+                                    : null;
+                            }
+                            $setRows[] = $row;
+                        }
+                    } else {
+                        // Normal racking (no sub-levels at this level)
+                        $row = ['level' => $level, 'subLevel' => null];
+                        for ($i = 0; $i < 4; $i++) {
+                            $col = $columnSet[$i] ?? null;
+                            $row['col' . ($i + 1)] = ($col !== null && isset($indexed[$col][$level][null])) 
+                                ? $indexed[$col][$level][null] 
+                                : null;
+                        }
+                        $setRows[] = $row;
+                    }
                 }
                 
                 // Paginate this column set independently
@@ -476,7 +537,7 @@
                 {{-- Column 1 --}}
                 <div class="qr-cell {{ !$rowData['col1'] ? 'empty' : '' }}">
                     @if($rowData['col1'])
-                    <span class="floor-label" data-floor="{{ $rowData['level'] }}">LANTAI {{ $rowData['level'] }}</span>
+                    <span class="floor-label" data-floor="{{ $rowData['level'] }}" data-sublevel="{{ $rowData['subLevel'] ?? '' }}">LANTAI {{ $rowData['level'] }}{{ $rowData['subLevel'] ? ' ' . $rowData['subLevel'] : '' }}</span>
                     <div class="qr-code">
                         {!! QrCode::size(80)->generate($rowData['col1']['location']->location_code) !!}
                     </div>
@@ -487,7 +548,7 @@
                 {{-- Column 2 --}}
                 <div class="qr-cell {{ !$rowData['col2'] ? 'empty' : '' }}">
                     @if($rowData['col2'])
-                    <span class="floor-label" data-floor="{{ $rowData['level'] }}">LANTAI {{ $rowData['level'] }}</span>
+                    <span class="floor-label" data-floor="{{ $rowData['level'] }}" data-sublevel="{{ $rowData['subLevel'] ?? '' }}">LANTAI {{ $rowData['level'] }}{{ $rowData['subLevel'] ? ' ' . $rowData['subLevel'] : '' }}</span>
                     <div class="qr-code">
                         {!! QrCode::size(80)->generate($rowData['col2']['location']->location_code) !!}
                     </div>
@@ -498,7 +559,7 @@
                 {{-- Column 3 --}}
                 <div class="qr-cell {{ !$rowData['col3'] ? 'empty' : '' }}">
                     @if($rowData['col3'])
-                    <span class="floor-label" data-floor="{{ $rowData['level'] }}">LANTAI {{ $rowData['level'] }}</span>
+                    <span class="floor-label" data-floor="{{ $rowData['level'] }}" data-sublevel="{{ $rowData['subLevel'] ?? '' }}">LANTAI {{ $rowData['level'] }}{{ $rowData['subLevel'] ? ' ' . $rowData['subLevel'] : '' }}</span>
                     <div class="qr-code">
                         {!! QrCode::size(80)->generate($rowData['col3']['location']->location_code) !!}
                     </div>
@@ -509,7 +570,7 @@
                 {{-- Column 4 --}}
                 <div class="qr-cell {{ !$rowData['col4'] ? 'empty' : '' }}">
                     @if($rowData['col4'])
-                    <span class="floor-label" data-floor="{{ $rowData['level'] }}">LANTAI {{ $rowData['level'] }}</span>
+                    <span class="floor-label" data-floor="{{ $rowData['level'] }}" data-sublevel="{{ $rowData['subLevel'] ?? '' }}">LANTAI {{ $rowData['level'] }}{{ $rowData['subLevel'] ? ' ' . $rowData['subLevel'] : '' }}</span>
                     <div class="qr-code">
                         {!! QrCode::size(80)->generate($rowData['col4']['location']->location_code) !!}
                     </div>
@@ -558,7 +619,12 @@
             
             floorLabels.forEach(label => {
                 const floorNumber = label.getAttribute('data-floor');
-                label.textContent = labelText + ' ' + floorNumber;
+                const subLevel = label.getAttribute('data-sublevel');
+                let text = labelText + ' ' + floorNumber;
+                if (subLevel) {
+                    text += ' ' + subLevel;
+                }
+                label.textContent = text;
             });
         }
         
