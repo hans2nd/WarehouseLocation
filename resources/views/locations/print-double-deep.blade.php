@@ -82,8 +82,8 @@
         }
 
         .arrow-left, .arrow-right {
-            width: 20mm;
-            height: 7mm;
+            width: var(--arrow-width, 20mm);
+            height: var(--arrow-height, 7mm);
             transition: transform 0.3s ease;
         }
 
@@ -312,6 +312,14 @@
                 <label>Font Label: <span id="floor-font-size-value" class="slider-value">9px</span></label>
                 <input type="range" id="floor-font-size-slider" min="6" max="14" value="9" oninput="updateFloorFontSize(this.value)">
             </div>
+            <div class="slider-group">
+                <label>Lebar Panah: <span id="arrow-width-value" class="slider-value">20mm</span></label>
+                <input type="range" id="arrow-width-slider" min="10" max="40" value="20" oninput="updateArrowSize('width', this.value)">
+            </div>
+            <div class="slider-group">
+                <label>Tinggi Panah: <span id="arrow-height-value" class="slider-value">7mm</span></label>
+                <input type="range" id="arrow-height-slider" min="3" max="15" value="7" oninput="updateArrowSize('height', this.value)">
+            </div>
         </div>
         
         {{-- Section: Label --}}
@@ -499,8 +507,6 @@
         <div class="dd-grid">
             {{-- Header Row: Arrows (Clickable) --}}
             @for($col = 0; $col < 4; $col++)
-            <div class="arrow-cell" onclick="toggleArrow(this)" data-col="{{ $col }}" data-page="{{ $pageNumber }}">
-                <span class="circle-marker">O</span>
                 @php
                     // Determine arrow direction for this column
                     if ($arrowDir === 'left') {
@@ -512,21 +518,7 @@
                         $showLeft = ($col % 2 == 0);
                     }
                 @endphp
-                
-                <div class="arrow-container" data-direction="{{ $showLeft ? 'left' : 'right' }}">
-                    @if($showLeft)
-                    {{-- Left Arrow --}}
-                    <svg class="arrow-left" viewBox="0 0 100 30">
-                        <polygon points="0,15 20,0 20,10 100,10 100,20 20,20 20,30" fill="black"/>
-                    </svg>
-                    @else
-                    {{-- Right Arrow --}}
-                    <svg class="arrow-right" viewBox="0 0 100 30">
-                        <polygon points="100,15 80,0 80,10 0,10 0,20 80,20 80,30" fill="black"/>
-                    </svg>
-                    @endif
-                </div>
-            </div>
+                <x-arrow-indicator :direction="$showLeft ? 'left' : 'right'" :col="$col" :page="$pageNumber" />
             @endfor
 
             {{-- QR Code Rows (5 rows per page) --}}
@@ -619,6 +611,12 @@
         function updateFloorFontSize(value) {
             document.documentElement.style.setProperty('--floor-font-size', value + 'px');
             document.getElementById('floor-font-size-value').textContent = value + 'px';
+        }
+        
+        // Update Arrow size dynamically (width or height)
+        function updateArrowSize(dimension, value) {
+            document.documentElement.style.setProperty('--arrow-' + dimension, value + 'mm');
+            document.getElementById('arrow-' + dimension + '-value').textContent = value + 'mm';
         }
         
         // Update all labels (level text, outer text, inner text)
