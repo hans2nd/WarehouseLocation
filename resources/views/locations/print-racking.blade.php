@@ -6,18 +6,13 @@
     <title>Cetak Lokasi Racking</title>
     <style>
         @media print {
-            @page {
-                size: A4 portrait;
-                margin: 3mm;
+            .no-print {
+                display: none !important;
             }
 
             body {
                 print-color-adjust: exact;
                 -webkit-print-color-adjust: exact;
-            }
-
-            .no-print {
-                display: none !important;
             }
             
             .page-break {
@@ -42,23 +37,27 @@
         }
 
         .page {
-            width: 210mm;
-            min-height: 297mm;
-            padding: 2mm;
+            width: var(--page-width, 210mm);
+            height: var(--page-height, 291mm);
+            padding: 0;
             margin: 0 auto;
+            overflow: hidden;
         }
 
-        /* Grid Container - 4 columns */
+        /* Grid Container - 4 columns, full height */
         .rack-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            border: 1px solid black;
+            grid-template-rows: var(--arrow-row-height, 14mm) repeat(5, 1fr);
+            row-gap: var(--row-gap, 0px);
+            border: var(--border-width, 0.3px) solid black;
             width: 100%;
+            height: 100%;
         }
 
         /* Arrow Header Row */
         .arrow-cell {
-            border: 1px solid black;
+            border: var(--border-width, 1px) solid black;
             padding: 1.5mm;
             text-align: center;
             height: 14mm;
@@ -75,11 +74,7 @@
             background-color: #d1d5db;
         }
 
-        .circle-marker {
-            font-size: 10px;
-            font-weight: bold;
-            margin-bottom: 0.5mm;
-        }
+
 
         .arrow-left, .arrow-right {
             width: var(--arrow-width, 20mm);
@@ -87,16 +82,16 @@
             transition: transform 0.3s ease;
         }
 
-        /* QR Cell - Compact untuk 5 rows per page */
+        /* QR Cell - fills available row height */
         .qr-cell {
-            border: 1px solid black;
-            padding: 1.5mm;
+            border: var(--border-width, 1px) solid black;
+            padding: var(--cell-padding, 1.5mm);
             text-align: center;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            height: 50mm;
+            min-height: 0;
         }
 
         .qr-cell.empty {
@@ -104,41 +99,26 @@
         }
 
         .qr-code svg {
-            width: var(--qr-size, 22mm);
-            height: var(--qr-size, 22mm);
+            width: var(--qr-size, 30mm);
+            height: var(--qr-size, 30mm);
         }
 
         .location-code {
             font-size: var(--font-size, 9px);
-            font-weight: bold;
+            font-weight: var(--font-weight, 700);
             margin-top: 1mm;
         }
         
         /* Floor Level Label */
         .floor-label {
             font-size: var(--floor-font-size, 10px);
-            font-weight: bold;
+            font-weight: var(--font-weight, 700);
             color: #333;
             margin-bottom: 1mm;
             text-transform: uppercase;
         }
 
-        /* Footer Row */
-        .footer-cell {
-            border: 1px solid black;
-            padding: 1.5mm;
-            text-align: center;
-            height: 6mm;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background: #e5e7eb;
-        }
 
-        .footer-marker {
-            font-size: 10px;
-            font-weight: bold;
-        }
         
         /* Floating Control Panel */
         .control-panel {
@@ -275,6 +255,14 @@
             text-align: center;
         }
     </style>
+    <style id="page-orientation">
+        @media print {
+            @page {
+                size: A4 portrait;
+                margin: 3mm;
+            }
+        }
+    </style>
 </head>
 
 <body>
@@ -282,16 +270,20 @@
     <div class="control-panel no-print">
         <h3>⚙️ Pengaturan Cetak Racking</h3>
         
-        <div class="info-badge">
-            📐 A4: 4 kolom × 5 baris = 20 lokasi/halaman
+        <div class="info-badge" id="orientation-badge">
+            📐 A4 Portrait: 4 kolom × 5 baris = 20 lokasi/halaman
         </div>
+        
+        <button class="control-btn" onclick="toggleOrientation()" id="orientation-btn" style="margin-bottom:8px;background:#e0e7ff;font-weight:bold">
+            🔄 Ubah ke Landscape
+        </button>
         
         {{-- Section: Ukuran --}}
         <div class="control-section">
             <h4>📐 Ukuran</h4>
             <div class="slider-group">
-                <label>QR Code: <span id="qr-size-value" class="slider-value">22mm</span></label>
-                <input type="range" id="qr-size-slider" min="15" max="32" value="22" oninput="updateQRSize(this.value)">
+                <label>QR Code: <span id="qr-size-value" class="slider-value">30mm</span></label>
+                <input type="range" id="qr-size-slider" min="15" max="45" value="30" oninput="updateQRSize(this.value)">
             </div>
             <div class="slider-group">
                 <label>Font Lokasi: <span id="font-size-value" class="slider-value">9px</span></label>
@@ -308,6 +300,25 @@
             <div class="slider-group">
                 <label>Tinggi Panah: <span id="arrow-height-value" class="slider-value">7mm</span></label>
                 <input type="range" id="arrow-height-slider" min="3" max="15" value="7" oninput="updateArrowSize('height', this.value)">
+            </div>
+            <div class="slider-group">
+                <label>Ketebalan Huruf: <span id="font-weight-value" class="slider-value">700</span></label>
+                <input type="range" id="font-weight-slider" min="100" max="900" step="100" value="700" oninput="updateFontWeight(this.value)">
+            </div>
+            <div class="slider-group">
+                <label>Ketebalan Border: <span id="border-width-value" class="slider-value">0.3px</span></label>
+                <input type="range" id="border-width-slider" min="1" max="30" value="3" oninput="updateBorderWidth(this.value)">
+            </div>
+            <button class="control-btn" id="toggle-border-btn" onclick="toggleBorder()">
+                🚫 Hapus Border
+            </button>
+            <div class="slider-group" style="margin-top:8px">
+                <label>Jarak Antar Baris: <span id="row-gap-value" class="slider-value">0mm</span></label>
+                <input type="range" id="row-gap-slider" min="0" max="30" value="0" oninput="updateRowGap(this.value)">
+            </div>
+            <div class="slider-group">
+                <label>Padding Cell: <span id="cell-padding-value" class="slider-value">1.5mm</span></label>
+                <input type="range" id="cell-padding-slider" min="0" max="30" value="15" oninput="updateCellPadding(this.value)">
             </div>
         </div>
         
@@ -500,6 +511,7 @@
         $pageNumber = 0;
     @endphp
 
+    <div id="pages-container">
     @foreach($pages as $pageIndex => $pageRows)
     @php
         $pageNumber++;
@@ -571,20 +583,135 @@
                 </div>
             @endforeach
 
-            {{-- Footer Row: Circle Markers --}}
-            @for($col = 0; $col < 4; $col++)
-            <div class="footer-cell">
-                <span class="footer-marker">O</span>
-            </div>
-            @endfor
+
         </div>
     </div>
     @endforeach
+    </div>
     
     <script>
         // SVG templates for arrows
         const leftArrowSVG = `<svg class="arrow-left" viewBox="0 0 100 30"><polygon points="0,15 20,0 20,10 100,10 100,20 20,20 20,30" fill="black"/></svg>`;
         const rightArrowSVG = `<svg class="arrow-right" viewBox="0 0 100 30"><polygon points="100,15 80,0 80,10 0,10 0,20 80,20 80,30" fill="black"/></svg>`;
+        
+        // Orientation: portrait / landscape with page restructuring
+        let isPortrait = true;
+        let originalPagesHTML = null;
+        
+        // Save original structure on load
+        document.addEventListener('DOMContentLoaded', function() {
+            originalPagesHTML = document.getElementById('pages-container').innerHTML;
+        });
+        
+        function toggleOrientation() {
+            isPortrait = !isPortrait;
+            const btn = document.getElementById('orientation-btn');
+            const badge = document.getElementById('orientation-badge');
+            const styleEl = document.getElementById('page-orientation');
+            const rowsPerPage = isPortrait ? 5 : 4;
+            const itemsPerPage = rowsPerPage * 4; // 4 columns
+            
+            if (isPortrait) {
+                document.documentElement.style.setProperty('--page-width', '210mm');
+                document.documentElement.style.setProperty('--page-height', '291mm');
+                styleEl.textContent = '@media print { @page { size: A4 portrait; margin: 3mm; } }';
+                btn.innerHTML = '\ud83d\udd04 Ubah ke Landscape';
+                badge.innerHTML = '\ud83d\udcd0 A4 Portrait: 4 kolom \u00d7 5 baris = 20 lokasi/halaman';
+            } else {
+                document.documentElement.style.setProperty('--page-width', '291mm');
+                document.documentElement.style.setProperty('--page-height', '204mm');
+                styleEl.textContent = '@media print { @page { size: A4 landscape; margin: 3mm; } }';
+                btn.innerHTML = '\ud83d\udd04 Ubah ke Portrait';
+                badge.innerHTML = '\ud83d\udcd0 A4 Landscape: 4 kolom \u00d7 4 baris = 16 lokasi/halaman';
+            }
+            
+            restructurePages(rowsPerPage);
+        }
+        
+        function restructurePages(rowsPerPage) {
+            const cols = 4;
+            const itemsPerPage = rowsPerPage * cols;
+            const container = document.getElementById('pages-container');
+            
+            // Restore original HTML first to get all items back
+            container.innerHTML = originalPagesHTML;
+            
+            const originalPages = container.querySelectorAll('.page');
+            
+            // Helper: get level from a cell's floor-label
+            function getCellLevel(cell) {
+                const label = cell.querySelector('.floor-label');
+                if (!label) return null;
+                return parseInt(label.getAttribute('data-floor')) || null;
+            }
+            
+            // Helper: get first/last non-null level from cells array
+            function getFirstLevel(cells) {
+                for (const c of cells) { const l = getCellLevel(c); if (l !== null) return l; }
+                return null;
+            }
+            function getLastLevel(cells) {
+                for (let i = cells.length - 1; i >= 0; i--) { const l = getCellLevel(cells[i]); if (l !== null) return l; }
+                return null;
+            }
+            
+            // Step 1: Group consecutive pages that belong to same column set
+            // Same set = next page's first level is LOWER than current group's last level (descending)
+            const columnGroups = [];
+            let currentGroup = null;
+            
+            originalPages.forEach(page => {
+                const grid = page.querySelector('.rack-grid');
+                const arrows = Array.from(grid.querySelectorAll('.arrow-cell')).map(ac => ac.cloneNode(true));
+                const cells = Array.from(grid.querySelectorAll('.qr-cell')).map(c => c.cloneNode(true));
+                
+                if (!currentGroup) {
+                    currentGroup = { arrows: arrows, cells: [...cells] };
+                } else {
+                    const lastLvl = getLastLevel(currentGroup.cells);
+                    const firstLvl = getFirstLevel(cells);
+                    
+                    if (lastLvl !== null && firstLvl !== null && firstLvl <= lastLvl) {
+                        // Same column set (levels still descending or equal), merge cells
+                        currentGroup.cells.push(...cells);
+                    } else {
+                        // New column set — flush current group, start new
+                        columnGroups.push(currentGroup);
+                        currentGroup = { arrows: arrows, cells: [...cells] };
+                    }
+                }
+            });
+            if (currentGroup) columnGroups.push(currentGroup);
+            
+            // Step 2: Re-chunk each column group into landscape-sized pages
+            const allChunks = [];
+            columnGroups.forEach(group => {
+                for (let i = 0; i < group.cells.length; i += itemsPerPage) {
+                    allChunks.push({
+                        arrows: group.arrows,
+                        cells: group.cells.slice(i, i + itemsPerPage)
+                    });
+                }
+            });
+            
+            // Step 3: Build pages
+            container.innerHTML = '';
+            
+            allChunks.forEach((chunk, idx) => {
+                const pageDiv = document.createElement('div');
+                pageDiv.className = 'page' + (idx < allChunks.length - 1 ? ' page-break' : '');
+                
+                const gridDiv = document.createElement('div');
+                gridDiv.className = 'rack-grid';
+                gridDiv.style.gridTemplateRows = 'var(--arrow-row-height, 14mm) repeat(' + rowsPerPage + ', 1fr)';
+                
+                chunk.arrows.forEach(ac => gridDiv.appendChild(ac.cloneNode(true)));
+                chunk.cells.forEach(cell => gridDiv.appendChild(cell));
+                
+                pageDiv.appendChild(gridDiv);
+                container.appendChild(pageDiv);
+            });
+        }
         
         // Update QR Code size dynamically
         function updateQRSize(value) {
@@ -604,10 +731,55 @@
             document.getElementById('floor-font-size-value').textContent = value + 'px';
         }
         
+        // Update Row Gap dynamically
+        function updateRowGap(value) {
+            const mm = (value / 10).toFixed(1);
+            document.documentElement.style.setProperty('--row-gap', mm + 'mm');
+            document.getElementById('row-gap-value').textContent = mm + 'mm';
+        }
+        
+        // Update Cell Padding dynamically
+        function updateCellPadding(value) {
+            const mm = (value / 10).toFixed(1);
+            document.documentElement.style.setProperty('--cell-padding', mm + 'mm');
+            document.getElementById('cell-padding-value').textContent = mm + 'mm';
+        }
+        
         // Update Arrow size dynamically (width or height)
         function updateArrowSize(dimension, value) {
             document.documentElement.style.setProperty('--arrow-' + dimension, value + 'mm');
             document.getElementById('arrow-' + dimension + '-value').textContent = value + 'mm';
+        }
+        
+        // Update Font Weight dynamically
+        function updateFontWeight(value) {
+            document.documentElement.style.setProperty('--font-weight', value);
+            document.getElementById('font-weight-value').textContent = value;
+        }
+        
+        // Update Border Width dynamically
+        function updateBorderWidth(value) {
+            const px = (value / 10).toFixed(1);
+            document.documentElement.style.setProperty('--border-width', px + 'px');
+            document.getElementById('border-width-value').textContent = px + 'px';
+        }
+        
+        // Toggle Border on/off
+        let borderVisible = true;
+        function toggleBorder() {
+            borderVisible = !borderVisible;
+            const btn = document.getElementById('toggle-border-btn');
+            if (borderVisible) {
+                const sliderVal = document.getElementById('border-width-slider').value;
+                const px = (sliderVal / 10).toFixed(1);
+                document.documentElement.style.setProperty('--border-width', px + 'px');
+                document.getElementById('border-width-value').textContent = px + 'px';
+                btn.innerHTML = '🚫 Hapus Border';
+            } else {
+                document.documentElement.style.setProperty('--border-width', '0px');
+                document.getElementById('border-width-value').textContent = '0px';
+                btn.innerHTML = '✅ Tampilkan Border';
+            }
         }
         
         // Update Floor Labels text

@@ -21,7 +21,6 @@
 ])
 
 <div class="arrow-cell" onclick="toggleArrow(this)" data-col="{{ $col }}" data-page="{{ $page }}">
-    <span class="circle-marker">O</span>
     <div class="arrow-container" data-direction="{{ $direction }}">
         @if($direction === 'left')
         {{-- Left Arrow --}}
