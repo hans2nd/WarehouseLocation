@@ -56,7 +56,7 @@ class LocationController extends Controller
         $request->validate([
             'ids' => 'required|array',
             'ids.*' => 'exists:warehouse_locations,id',
-            'print_type' => 'nullable|string|in:standard,flooring,racking,double_deep',
+            'print_type' => 'nullable|string|in:standard,flooring,racking,double_deep,ground_shelving',
             'arrow_direction' => 'nullable|string|in:alternate,left,right',
         ]);
 
@@ -72,6 +72,7 @@ class LocationController extends Controller
             'flooring' => 'locations.print-flooring',
             'racking' => 'locations.print-racking',
             'double_deep' => 'locations.print-double-deep',
+            'ground_shelving' => 'locations.print-ground-shelving',
         ];
         
         $viewName = $viewMap[$printType] ?? 'locations.print';
