@@ -81,6 +81,19 @@
             height: var(--arrow-height, 7mm);
             transition: transform 0.3s ease;
         }
+        
+        /* Double arrow (2 panah) */
+        .arrow-double-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 2mm;
+        }
+        
+        .arrow-double-container svg {
+            width: var(--arrow-width, 20mm);
+            height: var(--arrow-height, 7mm);
+        }
 
         /* QR Cell - fills available row height */
         .qr-cell {
@@ -292,6 +305,8 @@
                 <select id="barcode-count-select" onchange="updateBarcodeCount(this.value)" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:13px;cursor:pointer">
                     <option value="20" selected>20 barcode (5 baris × 4 kolom - Portrait)</option>
                     <option value="16">16 barcode (4 baris × 4 kolom - Portrait)</option>
+                    <option value="15">15 barcode (3 baris × 5 kolom - Landscape)</option>
+                    <option value="12p">12 barcode (5 baris × 4 kolom - Portrait)</option>
                     <option value="12">12 barcode (3 baris × 4 kolom - Landscape)</option>
                     <option value="8">8 barcode (2 baris × 4 kolom - Landscape)</option>
                 </select>
@@ -366,6 +381,15 @@
         {{-- Section: Arah Panah --}}
         <div class="control-section">
             <h4>🎯 Arah Panah</h4>
+            <div class="slider-group" style="margin-bottom:10px">
+                <label>Jenis Panah:</label>
+                <select id="arrow-type-select" onchange="updateArrowType(this.value)" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px;font-size:12px;cursor:pointer">
+                    <option value="single" selected>1 Panah (← atau →)</option>
+                    <option value="double-same">2 Panah Searah (←← atau →→)</option>
+                    <option value="triple-same">3 Panah Searah (←←← atau →→→)</option>
+                    <option value="double-oppose">2 Panah Berlawanan (← →)</option>
+                </select>
+            </div>
             <button class="control-btn" onclick="setAllArrows('left')">
                 <svg viewBox="0 0 100 30">
                     <polygon points="0,15 20,0 20,10 100,10 100,20 20,20 20,30" fill="currentColor"/>
@@ -616,6 +640,41 @@
         const leftArrowSVG = `<svg class="arrow-left" viewBox="0 0 100 30"><polygon points="0,15 20,0 20,10 100,10 100,20 20,20 20,30" fill="black"/></svg>`;
         const rightArrowSVG = `<svg class="arrow-right" viewBox="0 0 100 30"><polygon points="100,15 80,0 80,10 0,10 0,20 80,20 80,30" fill="black"/></svg>`;
         
+        // Arrow type state: 'single', 'double-same', 'triple-same', 'double-oppose'
+        let currentArrowType = 'single';
+        
+        // Build arrow HTML from direction + count + oppose flag
+        function buildArrowHTML(direction, count, oppose) {
+            if (count === 1) {
+                return direction === 'left' ? leftArrowSVG : rightArrowSVG;
+            }
+            let arrows = '';
+            for (let i = 0; i < count; i++) {
+                if (oppose && i > 0) {
+                    arrows += (direction === 'left' ? rightArrowSVG : leftArrowSVG);
+                } else {
+                    arrows += (direction === 'left' ? leftArrowSVG : rightArrowSVG);
+                }
+            }
+            return '<div class="arrow-double-container">' + arrows + '</div>';
+        }
+        
+        // Get arrow HTML based on type + direction
+        function getArrowHTML(type, direction) {
+            if (type === 'single') return buildArrowHTML(direction, 1, false);
+            if (type === 'double-same') return buildArrowHTML(direction, 2, false);
+            if (type === 'triple-same') return buildArrowHTML(direction, 3, false);
+            if (type === 'double-oppose') return buildArrowHTML(direction, 2, true);
+            return buildArrowHTML(direction, 1, false);
+        }
+        
+        // Get arrow count from type
+        function getCountFromType(type) {
+            if (type === 'double-same' || type === 'double-oppose') return 2;
+            if (type === 'triple-same') return 3;
+            return 1;
+        }
+        
         // Dynamic barcode count per page
         let currentRowsPerPage = 5;
         let originalPagesHTML = null;
@@ -626,32 +685,53 @@
         });
         
         function updateBarcodeCount(count) {
-            count = parseInt(count);
-            const rowsPerPage = count / 4;
+            count = String(count);
+            let cols = 4;
+            let rowsPerPage;
+            let numericCount;
+            let isPortrait;
+            let overrideItemsPerPage = null;
+            
+            if (count === '15') {
+                cols = 5;
+                rowsPerPage = 3;
+                numericCount = 15;
+                isPortrait = false;
+            } else if (count === '12p') {
+                cols = 4;
+                rowsPerPage = 5;
+                numericCount = 12;
+                isPortrait = true;
+                overrideItemsPerPage = 12;
+            } else {
+                numericCount = parseInt(count);
+                rowsPerPage = numericCount / 4;
+                isPortrait = numericCount >= 16;
+            }
+            
             currentRowsPerPage = rowsPerPage;
             const badge = document.getElementById('orientation-badge');
             const styleEl = document.getElementById('page-orientation');
             
-            if (count >= 16) {
-                // Portrait - 5 or 4 rows
+            if (isPortrait) {
                 document.documentElement.style.setProperty('--page-width', '210mm');
                 document.documentElement.style.setProperty('--page-height', '291mm');
                 styleEl.textContent = '@media print { @page { size: A4 portrait; margin: 3mm; } }';
-                badge.innerHTML = '\ud83d\udcd0 A4 Portrait: 4 kolom \u00d7 ' + rowsPerPage + ' baris = ' + count + ' lokasi/halaman';
+                badge.innerHTML = '\ud83d\udcd0 A4 Portrait: ' + cols + ' kolom \u00d7 ' + rowsPerPage + ' baris = ' + numericCount + ' lokasi/halaman';
             } else {
-                // Landscape - 3 or 2 rows
                 document.documentElement.style.setProperty('--page-width', '291mm');
                 document.documentElement.style.setProperty('--page-height', '204mm');
                 styleEl.textContent = '@media print { @page { size: A4 landscape; margin: 3mm; } }';
-                badge.innerHTML = '\ud83d\udcd0 A4 Landscape: 4 kolom \u00d7 ' + rowsPerPage + ' baris = ' + count + ' lokasi/halaman';
+                badge.innerHTML = '\ud83d\udcd0 A4 Landscape: ' + cols + ' kolom \u00d7 ' + rowsPerPage + ' baris = ' + numericCount + ' lokasi/halaman';
             }
             
-            restructurePages(rowsPerPage);
+            restructurePages(rowsPerPage, cols, overrideItemsPerPage);
         }
         
-        function restructurePages(rowsPerPage) {
-            const cols = 4;
-            const itemsPerPage = rowsPerPage * cols;
+        function restructurePages(rowsPerPage, cols, overrideItemsPerPage) {
+            cols = cols || 4;
+            const chunkSize = overrideItemsPerPage || (rowsPerPage * cols);
+            const gridCapacity = rowsPerPage * cols;
             const container = document.getElementById('pages-container');
             
             // Restore original HTML first to get all items back
@@ -676,7 +756,8 @@
                 return null;
             }
             
-            // Step 1: Group consecutive pages that belong to same column set
+            // Collect all individual QR cells from all pages (flatten)
+            const allCells = [];
             const columnGroups = [];
             let currentGroup = null;
             
@@ -701,16 +782,46 @@
             });
             if (currentGroup) columnGroups.push(currentGroup);
             
-            // Step 2: Re-chunk each column group into landscape-sized pages
+            // Step 2: Re-chunk each column group into pages (using chunkSize for pagination)
             const allChunks = [];
             columnGroups.forEach(group => {
-                for (let i = 0; i < group.cells.length; i += itemsPerPage) {
+                for (let i = 0; i < group.cells.length; i += chunkSize) {
                     allChunks.push({
                         arrows: group.arrows,
-                        cells: group.cells.slice(i, i + itemsPerPage)
+                        cells: group.cells.slice(i, i + chunkSize)
                     });
                 }
             });
+            
+            // Helper: create arrow cells for the required column count
+            function createArrowCells(sourceArrows, numCols) {
+                const arrowCells = [];
+                for (let i = 0; i < numCols; i++) {
+                    if (i < sourceArrows.length) {
+                        // Clone existing arrow and update col index
+                        const ac = sourceArrows[i].cloneNode(true);
+                        ac.setAttribute('data-col', i);
+                        // Re-render arrow with current type
+                        const container = ac.querySelector('.arrow-container');
+                        if (container) {
+                            const dir = container.getAttribute('data-direction') || ((i % 2 === 0) ? 'left' : 'right');
+                            container.setAttribute('data-count', getCountFromType(currentArrowType));
+                            container.innerHTML = getArrowHTML(currentArrowType, dir);
+                        }
+                        arrowCells.push(ac);
+                    } else {
+                        // Create new arrow cell for extra columns
+                        const ac = document.createElement('div');
+                        ac.className = 'arrow-cell';
+                        ac.setAttribute('data-col', i);
+                        ac.setAttribute('onclick', 'toggleArrow(this)');
+                        const dir = (i % 2 === 0) ? 'left' : 'right';
+                        ac.innerHTML = '<div class="arrow-container" data-direction="' + dir + '" data-count="' + getCountFromType(currentArrowType) + '">' + getArrowHTML(currentArrowType, dir) + '</div>';
+                        arrowCells.push(ac);
+                    }
+                }
+                return arrowCells;
+            }
             
             // Step 3: Build pages
             container.innerHTML = '';
@@ -721,10 +832,23 @@
                 
                 const gridDiv = document.createElement('div');
                 gridDiv.className = 'dd-grid';
+                gridDiv.style.gridTemplateColumns = 'repeat(' + cols + ', 1fr)';
                 gridDiv.style.gridTemplateRows = 'var(--arrow-row-height, 14mm) repeat(' + rowsPerPage + ', 1fr)';
                 
-                chunk.arrows.forEach(ac => gridDiv.appendChild(ac.cloneNode(true)));
+                // Add arrow cells matching column count
+                const arrowCells = createArrowCells(chunk.arrows, cols);
+                arrowCells.forEach(ac => gridDiv.appendChild(ac));
+                
+                // Add QR cells
                 chunk.cells.forEach(cell => gridDiv.appendChild(cell));
+                
+                // Pad with empty cells to fill grid capacity
+                const remaining = gridCapacity - chunk.cells.length;
+                for (let p = 0; p < remaining; p++) {
+                    const emptyCell = document.createElement('div');
+                    emptyCell.className = 'qr-cell empty';
+                    gridDiv.appendChild(emptyCell);
+                }
                 
                 pageDiv.appendChild(gridDiv);
                 container.appendChild(pageDiv);
@@ -831,34 +955,57 @@
             });
         }
         
-        // Toggle individual arrow on click
+        // Toggle individual arrow on click - cycles: ←→←←→→←←←→→→
         function toggleArrow(cell) {
             const container = cell.querySelector('.arrow-container');
-            const currentDir = container.getAttribute('data-direction');
-            const newDir = currentDir === 'left' ? 'right' : 'left';
+            const currentDir = container.getAttribute('data-direction') || 'left';
+            const currentCount = parseInt(container.getAttribute('data-count') || '1');
             
-            // Update direction
+            let newDir, newCount;
+            if (currentDir === 'left') {
+                newDir = 'right';
+                newCount = currentCount;
+            } else {
+                newDir = 'left';
+                newCount = currentCount >= 3 ? 1 : currentCount + 1;
+            }
+            
             container.setAttribute('data-direction', newDir);
-            container.innerHTML = newDir === 'left' ? leftArrowSVG : rightArrowSVG;
+            container.setAttribute('data-count', newCount);
+            container.innerHTML = buildArrowHTML(newDir, newCount, false);
         }
         
-        // Set all arrows to a specific direction
+        // Set all arrows to a specific direction (uses current dropdown type)
         function setAllArrows(direction) {
             const containers = document.querySelectorAll('.arrow-container');
+            const count = getCountFromType(currentArrowType);
+            const oppose = currentArrowType === 'double-oppose';
             
             containers.forEach((container, index) => {
                 let newDir = direction;
                 
-                // For alternate mode, check column position
                 if (direction === 'alternate') {
-                    // Get parent arrow-cell and its column index
                     const cell = container.closest('.arrow-cell');
                     const col = parseInt(cell.getAttribute('data-col'));
                     newDir = (col % 2 === 0) ? 'left' : 'right';
                 }
                 
                 container.setAttribute('data-direction', newDir);
-                container.innerHTML = newDir === 'left' ? leftArrowSVG : rightArrowSVG;
+                container.setAttribute('data-count', count);
+                container.innerHTML = buildArrowHTML(newDir, count, oppose);
+            });
+        }
+        
+        // Update arrow type (single/double-same/triple-same/double-oppose)
+        function updateArrowType(type) {
+            currentArrowType = type;
+            const count = getCountFromType(type);
+            const oppose = type === 'double-oppose';
+            const containers = document.querySelectorAll('.arrow-container');
+            containers.forEach(container => {
+                const dir = container.getAttribute('data-direction') || 'left';
+                container.setAttribute('data-count', count);
+                container.innerHTML = buildArrowHTML(dir, count, oppose);
             });
         }
     </script>
