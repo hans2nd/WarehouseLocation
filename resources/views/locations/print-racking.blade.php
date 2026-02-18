@@ -50,14 +50,14 @@
             grid-template-columns: repeat(4, 1fr);
             grid-template-rows: var(--arrow-row-height, 14mm) repeat(5, 1fr);
             row-gap: var(--row-gap, 0px);
-            border: var(--border-width, 0.3px) solid black;
+            border: var(--border-width, 0.1px) solid black;
             width: 100%;
             height: 100%;
         }
 
         /* Arrow Header Row */
         .arrow-cell {
-            border: var(--border-width, 1px) solid black;
+            border: var(--border-width, 0.1px) solid black;
             padding: 1.5mm;
             text-align: center;
             height: 14mm;
@@ -84,7 +84,7 @@
 
         /* QR Cell - fills available row height */
         .qr-cell {
-            border: var(--border-width, 1px) solid black;
+            border: var(--border-width, 0.1px) solid black;
             padding: var(--cell-padding, 1.5mm);
             text-align: center;
             display: flex;
@@ -106,7 +106,7 @@
         .location-code {
             font-size: var(--font-size, 9px);
             font-weight: var(--font-weight, 700);
-            margin-top: 1mm;
+            margin-top: var(--label-gap, 1mm);
         }
         
         /* Floor Level Label */
@@ -114,7 +114,7 @@
             font-size: var(--floor-font-size, 10px);
             font-weight: var(--font-weight, 700);
             color: #333;
-            margin-bottom: 1mm;
+            margin-bottom: var(--label-gap, 1mm);
             text-transform: uppercase;
         }
 
@@ -274,9 +274,18 @@
             📐 A4 Portrait: 4 kolom × 5 baris = 20 lokasi/halaman
         </div>
         
-        <button class="control-btn" onclick="toggleOrientation()" id="orientation-btn" style="margin-bottom:8px;background:#e0e7ff;font-weight:bold">
-            🔄 Ubah ke Landscape
-        </button>
+        {{-- Section: Barcode per Halaman --}}
+        <div class="control-section">
+            <h4>📄 Barcode per Halaman</h4>
+            <div class="slider-group">
+                <select id="barcode-count-select" onchange="updateBarcodeCount(this.value)" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:13px;cursor:pointer">
+                    <option value="20" selected>20 barcode (5 baris × 4 kolom - Portrait)</option>
+                    <option value="16">16 barcode (4 baris × 4 kolom - Portrait)</option>
+                    <option value="12">12 barcode (3 baris × 4 kolom - Landscape)</option>
+                    <option value="8">8 barcode (2 baris × 4 kolom - Landscape)</option>
+                </select>
+            </div>
+        </div>
         
         {{-- Section: Ukuran --}}
         <div class="control-section">
@@ -287,11 +296,15 @@
             </div>
             <div class="slider-group">
                 <label>Font Lokasi: <span id="font-size-value" class="slider-value">9px</span></label>
-                <input type="range" id="font-size-slider" min="6" max="14" value="9" oninput="updateFontSize(this.value)">
+                <input type="range" id="font-size-slider" min="6" max="24" value="9" oninput="updateFontSize(this.value)">
             </div>
             <div class="slider-group">
                 <label>Font Lantai: <span id="floor-font-size-value" class="slider-value">10px</span></label>
-                <input type="range" id="floor-font-size-slider" min="6" max="16" value="10" oninput="updateFloorFontSize(this.value)">
+                <input type="range" id="floor-font-size-slider" min="6" max="24" value="10" oninput="updateFloorFontSize(this.value)">
+            </div>
+            <div class="slider-group">
+                <label>Jarak Label-Lokasi: <span id="label-gap-value" class="slider-value">1mm</span></label>
+                <input type="range" id="label-gap-slider" min="0" max="50" value="10" oninput="updateLabelGap(this.value)">
             </div>
             <div class="slider-group">
                 <label>Lebar Panah: <span id="arrow-width-value" class="slider-value">20mm</span></label>
@@ -306,8 +319,8 @@
                 <input type="range" id="font-weight-slider" min="100" max="900" step="100" value="700" oninput="updateFontWeight(this.value)">
             </div>
             <div class="slider-group">
-                <label>Ketebalan Border: <span id="border-width-value" class="slider-value">0.3px</span></label>
-                <input type="range" id="border-width-slider" min="1" max="30" value="3" oninput="updateBorderWidth(this.value)">
+                <label>Ketebalan Border: <span id="border-width-value" class="slider-value">0.1px</span></label>
+                <input type="range" id="border-width-slider" min="1" max="30" value="1" oninput="updateBorderWidth(this.value)">
             </div>
             <button class="control-btn" id="toggle-border-btn" onclick="toggleBorder()">
                 🚫 Hapus Border
@@ -594,8 +607,8 @@
         const leftArrowSVG = `<svg class="arrow-left" viewBox="0 0 100 30"><polygon points="0,15 20,0 20,10 100,10 100,20 20,20 20,30" fill="black"/></svg>`;
         const rightArrowSVG = `<svg class="arrow-right" viewBox="0 0 100 30"><polygon points="100,15 80,0 80,10 0,10 0,20 80,20 80,30" fill="black"/></svg>`;
         
-        // Orientation: portrait / landscape with page restructuring
-        let isPortrait = true;
+        // Dynamic barcode count per page
+        let currentRowsPerPage = 5;
         let originalPagesHTML = null;
         
         // Save original structure on load
@@ -603,26 +616,25 @@
             originalPagesHTML = document.getElementById('pages-container').innerHTML;
         });
         
-        function toggleOrientation() {
-            isPortrait = !isPortrait;
-            const btn = document.getElementById('orientation-btn');
+        function updateBarcodeCount(count) {
+            count = parseInt(count);
+            const rowsPerPage = count / 4;
+            currentRowsPerPage = rowsPerPage;
             const badge = document.getElementById('orientation-badge');
             const styleEl = document.getElementById('page-orientation');
-            const rowsPerPage = isPortrait ? 5 : 4;
-            const itemsPerPage = rowsPerPage * 4; // 4 columns
             
-            if (isPortrait) {
+            if (count >= 16) {
+                // Portrait - 5 or 4 rows
                 document.documentElement.style.setProperty('--page-width', '210mm');
                 document.documentElement.style.setProperty('--page-height', '291mm');
                 styleEl.textContent = '@media print { @page { size: A4 portrait; margin: 3mm; } }';
-                btn.innerHTML = '\ud83d\udd04 Ubah ke Landscape';
-                badge.innerHTML = '\ud83d\udcd0 A4 Portrait: 4 kolom \u00d7 5 baris = 20 lokasi/halaman';
+                badge.innerHTML = '\ud83d\udcd0 A4 Portrait: 4 kolom \u00d7 ' + rowsPerPage + ' baris = ' + count + ' lokasi/halaman';
             } else {
+                // Landscape - 3 or 2 rows
                 document.documentElement.style.setProperty('--page-width', '291mm');
                 document.documentElement.style.setProperty('--page-height', '204mm');
                 styleEl.textContent = '@media print { @page { size: A4 landscape; margin: 3mm; } }';
-                btn.innerHTML = '\ud83d\udd04 Ubah ke Portrait';
-                badge.innerHTML = '\ud83d\udcd0 A4 Landscape: 4 kolom \u00d7 4 baris = 16 lokasi/halaman';
+                badge.innerHTML = '\ud83d\udcd0 A4 Landscape: 4 kolom \u00d7 ' + rowsPerPage + ' baris = ' + count + ' lokasi/halaman';
             }
             
             restructurePages(rowsPerPage);
@@ -729,6 +741,13 @@
         function updateFloorFontSize(value) {
             document.documentElement.style.setProperty('--floor-font-size', value + 'px');
             document.getElementById('floor-font-size-value').textContent = value + 'px';
+        }
+        
+        // Update Label Gap dynamically
+        function updateLabelGap(value) {
+            const mm = (value / 10).toFixed(1);
+            document.documentElement.style.setProperty('--label-gap', mm + 'mm');
+            document.getElementById('label-gap-value').textContent = mm + 'mm';
         }
         
         // Update Row Gap dynamically
