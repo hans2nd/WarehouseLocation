@@ -25,7 +25,7 @@ class LocationController extends Controller
             });
         }
 
-        $locations = $query->latest()->paginate(189)->withQueryString();
+        $locations = $query->latest()->paginate(500)->withQueryString();
         return view('locations.index', compact('locations'));
     }
 
@@ -56,7 +56,7 @@ class LocationController extends Controller
         $request->validate([
             'ids' => 'required|array',
             'ids.*' => 'exists:warehouse_locations,id',
-            'print_type' => 'nullable|string|in:standard,flooring,racking,double_deep,ground_shelving',
+            'print_type' => 'nullable|string|in:standard,flooring,racking,double_deep,ground_shelving,gangway',
             'arrow_direction' => 'nullable|string|in:alternate,left,right',
         ]);
 
@@ -73,6 +73,7 @@ class LocationController extends Controller
             'racking' => 'locations.print-racking',
             'double_deep' => 'locations.print-double-deep',
             'ground_shelving' => 'locations.print-ground-shelving',
+            'gangway' => 'locations.print-gangway',
         ];
         
         $viewName = $viewMap[$printType] ?? 'locations.print';

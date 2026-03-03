@@ -76,6 +76,7 @@
 
 
 
+
         .arrow-left, .arrow-right {
             width: var(--arrow-width, 20mm);
             height: var(--arrow-height, 7mm);

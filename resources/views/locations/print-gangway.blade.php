@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Cetak Lokasi Double Deep</title>
+    <title>Cetak Lokasi Gangway</title>
     <style>
         @media print {
             .no-print {
@@ -44,8 +44,8 @@
             overflow: hidden;
         }
 
-        /* Grid Container - 4 columns for double deep, full height */
-        .dd-grid {
+        /* Grid Container - 4 columns, full height */
+        .gangway-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             grid-template-rows: var(--arrow-row-height, 14mm) repeat(5, 1fr);
@@ -73,7 +73,11 @@
         .arrow-cell:hover {
             background-color: #d1d5db;
         }
-
+        
+        /* Merged Arrow Cell - spans 2 columns */
+        .arrow-cell-merged {
+            grid-column: span 2;
+        }
 
 
 
@@ -123,24 +127,13 @@
             margin-top: var(--label-gap, 1mm);
         }
         
-        /* Floor Level Label - LUAR/DALAM */
+        /* Floor Level Label */
         .floor-label {
-            font-size: var(--floor-font-size, 9px);
+            font-size: var(--floor-font-size, 10px);
             font-weight: var(--font-weight, 700);
             color: #333;
-            margin-bottom: var(--label-gap, 0.5mm);
+            margin-bottom: var(--label-gap, 1mm);
             text-transform: uppercase;
-            text-align: center;
-            line-height: 1.2;
-        }
-        
-        .floor-label .level-number {
-            display: block;
-        }
-        
-        .floor-label .position-type {
-            display: block;
-            font-size: 0.9em;
         }
 
 
@@ -293,7 +286,7 @@
 <body>
     {{-- Floating Control Panel --}}
     <div class="control-panel no-print">
-        <h3>⚙️ Pengaturan Cetak Double Deep</h3>
+        <h3>⚙️ Pengaturan Cetak Gangway</h3>
         
         <div class="info-badge" id="orientation-badge">
             📐 A4 Portrait: 4 kolom × 5 baris = 20 lokasi/halaman
@@ -306,10 +299,8 @@
                 <select id="barcode-count-select" onchange="updateBarcodeCount(this.value)" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:13px;cursor:pointer">
                     <option value="20" selected>20 barcode (5 baris × 4 kolom - Portrait)</option>
                     <option value="16">16 barcode (4 baris × 4 kolom - Portrait)</option>
-                    <option value="15">15 barcode (3 baris × 5 kolom - Landscape)</option>
-                    <option value="12p">12 barcode (5 baris × 4 kolom - Portrait)</option>
-                    <option value="12">12 barcode (3 baris × 4 kolom - Landscape)</option>
-                    <option value="8">8 barcode (2 baris × 4 kolom - Landscape)</option>
+                    <option value="12p">12 barcode (3 baris × 4 kolom - Portrait)</option>
+                    <option value="8p">8 barcode (2 baris × 4 kolom - Portrait)</option>
                 </select>
             </div>
         </div>
@@ -326,12 +317,12 @@
                 <input type="range" id="font-size-slider" min="6" max="24" value="9" oninput="updateFontSize(this.value)">
             </div>
             <div class="slider-group">
-                <label>Font Label: <span id="floor-font-size-value" class="slider-value">9px</span></label>
-                <input type="range" id="floor-font-size-slider" min="6" max="24" value="9" oninput="updateFloorFontSize(this.value)">
+                <label>Font Lantai: <span id="floor-font-size-value" class="slider-value">10px</span></label>
+                <input type="range" id="floor-font-size-slider" min="6" max="24" value="10" oninput="updateFloorFontSize(this.value)">
             </div>
             <div class="slider-group">
-                <label>Jarak Label-Lokasi: <span id="label-gap-value" class="slider-value">0.5mm</span></label>
-                <input type="range" id="label-gap-slider" min="0" max="50" value="5" oninput="updateLabelGap(this.value)">
+                <label>Jarak Label-Lokasi: <span id="label-gap-value" class="slider-value">1mm</span></label>
+                <input type="range" id="label-gap-slider" min="0" max="50" value="10" oninput="updateLabelGap(this.value)">
             </div>
             <div class="slider-group">
                 <label>Lebar Panah: <span id="arrow-width-value" class="slider-value">20mm</span></label>
@@ -362,20 +353,12 @@
             </div>
         </div>
         
-        {{-- Section: Label --}}
+        {{-- Section: Label Lantai --}}
         <div class="control-section">
-            <h4>🏢 Label Teks</h4>
+            <h4>🏢 Label Lantai</h4>
             <div class="slider-group">
-                <label>Teks Level:</label>
-                <input type="text" id="level-label-text" value="LANTAI" class="text-input" oninput="updateAllLabels()">
-            </div>
-            <div class="slider-group">
-                <label>Teks Luar:</label>
-                <input type="text" id="outer-label-text" value="LUAR" class="text-input" oninput="updateAllLabels()">
-            </div>
-            <div class="slider-group">
-                <label>Teks Dalam:</label>
-                <input type="text" id="inner-label-text" value="DALAM" class="text-input" oninput="updateAllLabels()">
+                <label>Teks Label:</label>
+                <input type="text" id="floor-label-text" value="LANTAI" class="text-input" oninput="updateFloorLabels()">
             </div>
         </div>
         
@@ -418,126 +401,146 @@
         // Default arrow direction
         $arrowDir = $arrowDirection ?? 'alternate';
         
-        // Parse and group locations
-        // Format: ZONE.ROW.COLUMN.LEVEL.DEPTH (e.g., FA.A.1.1.a, FA.A.2.5.b)
-        // ZONE = FA, ROW = A, COLUMN = 1, LEVEL = 1, DEPTH = a/b
+        // Parse locations
+        // Format: ZONE.ROW.COLUMN.LEVEL (e.g., D.B.15.7, D.C.16.5)
+        // Gangway layout:
+        //   Grid ROW    = LEVEL (highest first: 7, 6, 5, 4, 3...)
+        //   Grid COLUMN = ROW.COLUMN combos sorted by ROW then COLUMN
+        //   Example: col1=D.B.15, col2=D.B.16, col3=D.C.15, col4=D.C.16
+        //   Merged arrows: cols 1&2 (same ROW), cols 3&4 (same ROW)
         $parsed = [];
         
         foreach($locations as $loc) {
             $code = $loc->location_code;
             $segments = explode('.', $code);
             
-            // Support both 5-segment (FA.A.1.1.a) and 4-segment (AC.1.1.1a) formats
-            if (count($segments) >= 5) {
-                // 5-segment format: ZONE.ROW.COLUMN.LEVEL.DEPTH
-                $zone = $segments[0];            // FA
-                $row = $segments[1];             // A
-                $column = (int)$segments[2];     // 1, 2, etc.
-                $level = (int)$segments[3];      // 1, 2, 3, 4, 5
-                $depth = strtolower($segments[4]); // a = LUAR, b = DALAM
+            if (count($segments) >= 4) {
+                $zone = $segments[0];            // D
+                $row = $segments[1];             // B, C
+                $column = (int)$segments[2];     // 15, 16
                 
-                // Group key: ZONE.ROW (e.g., FA.A)
-                $groupKey = "{$zone}.{$row}";
-                
-                $parsed[] = [
-                    'location' => $loc,
-                    'groupKey' => $groupKey,
-                    'column' => $column,
-                    'level' => $level,
-                    'depth' => $depth,
-                ];
-            } elseif (count($segments) >= 4) {
-                // 4-segment format: PREFIX.ZONE.BAY.LEVELdepth (e.g., AC.1.1.5a)
-                $prefix = $segments[0];          // AC
-                $zone = $segments[1];            // 1
-                $column = (int)$segments[2];     // 1, 2
-                $levelDepth = $segments[3];      // 5a, 5b
-                
-                preg_match('/(\d+)([ab])?/i', $levelDepth, $matches);
-                $level = (int)($matches[1] ?? 1);
-                $depth = strtolower($matches[2] ?? 'a');
-                
-                $groupKey = "{$prefix}.{$zone}";
+                // Check for sub-level (e.g., 1B3, 1A2)
+                $subLevel = null;
+                if (preg_match('/^(\d+)([A-Za-z]\d+)$/', $segments[3], $matches)) {
+                    $level = (int)$matches[1];
+                    $subLevel = strtoupper($matches[2]);
+                } else {
+                    $level = (int)$segments[3];
+                }
                 
                 $parsed[] = [
                     'location' => $loc,
-                    'groupKey' => $groupKey,
+                    'zone' => $zone,
+                    'row' => $row,
                     'column' => $column,
                     'level' => $level,
-                    'depth' => $depth,
+                    'subLevel' => $subLevel,
+                    'rcKey' => "{$row}.{$column}",  // ROW.COLUMN combo key
                 ];
             }
         }
         
-        // Group by groupKey (ZONE.ROW)
-        $groups = [];
+        // Group by ZONE
+        $zoneGroups = [];
         foreach ($parsed as $item) {
-            $groups[$item['groupKey']][] = $item;
+            $zoneGroups[$item['zone']][] = $item;
         }
+        ksort($zoneGroups, SORT_NATURAL);
         
-        // Sort groups naturally
-        ksort($groups, SORT_NATURAL);
-        
-        // Build pages for each group
-        // Layout: Column pairs (1,2), (3,4), etc. with levels from high to low
-        // Each column pair gets its own pages (no mixing column pairs on the same page)
+        // Build pages
         $rowsPerPage = 5;
         $pages = [];
         
-        foreach ($groups as $groupKey => $items) {
-            // Get unique columns and sort them
-            $columns = array_unique(array_column($items, 'column'));
-            sort($columns, SORT_NUMERIC);
-            
-            // Pair consecutive columns: (1,2), (3,4), (5,6), etc.
-            $columnPairs = [];
-            for ($i = 0; $i < count($columns); $i += 2) {
-                $col1 = $columns[$i] ?? null;
-                $col2 = $columns[$i + 1] ?? null;
-                if ($col1 !== null) {
-                    $columnPairs[] = [$col1, $col2];
-                }
+        foreach ($zoneGroups as $zone => $items) {
+            // Get unique ROW.COLUMN combos, sorted by ROW (natural) then COLUMN (numeric)
+            $rcCombos = [];
+            foreach ($items as $item) {
+                $rcCombos[$item['rcKey']] = ['row' => $item['row'], 'column' => $item['column']];
             }
             
-            // Index items by column, level, depth for quick lookup
+            // Sort: by ROW naturally, then by COLUMN numerically
+            uasort($rcCombos, function($a, $b) {
+                $cmp = strnatcmp($a['row'], $b['row']);
+                if ($cmp !== 0) return $cmp;
+                return $a['column'] - $b['column'];
+            });
+            
+            $rcKeys = array_keys($rcCombos); // e.g., ['B.15', 'B.16', 'C.15', 'C.16']
+            
+            // Index items by rcKey + level + subLevel for lookup
             $indexed = [];
             foreach ($items as $item) {
-                $indexed[$item['column']][$item['level']][$item['depth']] = $item;
+                $indexed[$item['rcKey']][$item['level']][$item['subLevel']] = $item;
             }
             
-            // For each column pair, create rows and paginate independently
-            foreach ($columnPairs as $pair) {
-                $col1 = $pair[0];
-                $col2 = $pair[1];
-                
-                // Find max level for this specific column pair
-                $pairMaxLevel = 0;
-                if ($col1 !== null && isset($indexed[$col1])) {
-                    $pairMaxLevel = max($pairMaxLevel, max(array_keys($indexed[$col1])));
-                }
-                if ($col2 !== null && isset($indexed[$col2])) {
-                    $pairMaxLevel = max($pairMaxLevel, max(array_keys($indexed[$col2])));
+            // Chunk rcKeys into sets of 4 (= 4 grid columns)
+            $rcSets = array_chunk($rcKeys, 4);
+            
+            foreach ($rcSets as $rcSet) {
+                // Find max level across all rcKeys in this set
+                $setMaxLevel = 0;
+                foreach ($rcSet as $rck) {
+                    if (isset($indexed[$rck])) {
+                        $setMaxLevel = max($setMaxLevel, max(array_keys($indexed[$rck])));
+                    }
                 }
                 
-                // Create rows from highest level to lowest (top to bottom in print)
-                $pairRows = [];
-                for ($level = $pairMaxLevel; $level >= 1; $level--) {
-                    $pairRows[] = [
-                        'level' => $level,
-                        // Column 1: Col1 Depth A (LUAR)
-                        'col1' => $indexed[$col1][$level]['a'] ?? null,
-                        // Column 2: Col1 Depth B (DALAM)
-                        'col2' => $indexed[$col1][$level]['b'] ?? null,
-                        // Column 3: Col2 Depth A (LUAR)
-                        'col3' => ($col2 !== null) ? ($indexed[$col2][$level]['a'] ?? null) : null,
-                        // Column 4: Col2 Depth B (DALAM)
-                        'col4' => ($col2 !== null) ? ($indexed[$col2][$level]['b'] ?? null) : null,
-                    ];
+                // Create grid rows from highest level to lowest
+                $setRows = [];
+                for ($level = $setMaxLevel; $level >= 1; $level--) {
+                    // Check for sub-levels at this level
+                    $allSubLevels = [];
+                    foreach ($rcSet as $rck) {
+                        if (isset($indexed[$rck][$level])) {
+                            foreach (array_keys($indexed[$rck][$level]) as $sl) {
+                                if ($sl !== null && $sl !== '' && !in_array($sl, $allSubLevels)) {
+                                    $allSubLevels[] = $sl;
+                                }
+                            }
+                        }
+                    }
+                    
+                    if (!empty($allSubLevels)) {
+                        rsort($allSubLevels, SORT_NATURAL);
+                        foreach ($allSubLevels as $sl) {
+                            $gridRow = ['level' => $level, 'subLevel' => $sl];
+                            for ($i = 0; $i < 4; $i++) {
+                                $rck = $rcSet[$i] ?? null;
+                                $gridRow['col' . ($i + 1)] = ($rck !== null && isset($indexed[$rck][$level][$sl]))
+                                    ? $indexed[$rck][$level][$sl]
+                                    : null;
+                            }
+                            $setRows[] = $gridRow;
+                        }
+                        // Also check null sub-level
+                        $hasNormal = false;
+                        foreach ($rcSet as $rck) {
+                            if (isset($indexed[$rck][$level][null])) { $hasNormal = true; break; }
+                        }
+                        if ($hasNormal) {
+                            $gridRow = ['level' => $level, 'subLevel' => null];
+                            for ($i = 0; $i < 4; $i++) {
+                                $rck = $rcSet[$i] ?? null;
+                                $gridRow['col' . ($i + 1)] = ($rck !== null && isset($indexed[$rck][$level][null]))
+                                    ? $indexed[$rck][$level][null] : null;
+                            }
+                            $setRows[] = $gridRow;
+                        }
+                    } else {
+                        // Normal (no sub-levels)
+                        $gridRow = ['level' => $level, 'subLevel' => null];
+                        for ($i = 0; $i < 4; $i++) {
+                            $rck = $rcSet[$i] ?? null;
+                            $gridRow['col' . ($i + 1)] = ($rck !== null && isset($indexed[$rck][$level][null]))
+                                ? $indexed[$rck][$level][null] : null;
+                        }
+                        $setRows[] = $gridRow;
+                    }
                 }
                 
-                // Paginate this column pair independently
-                $pairPages = array_chunk($pairRows, $rowsPerPage);
-                foreach ($pairPages as $page) {
+                // Paginate
+                $setPages = array_chunk($setRows, $rowsPerPage);
+                foreach ($setPages as $page) {
                     $pages[] = $page;
                 }
             }
@@ -554,83 +557,46 @@
     
     <div class="page {{ !$loop->last ? 'page-break' : '' }}">
         
-        <div class="dd-grid">
-            {{-- Header Row: Arrows (Clickable) --}}
-            @for($col = 0; $col < 4; $col++)
+        <div class="gangway-grid">
+            {{-- Header Row: Merged Arrows (col 1&2 and col 3&4) --}}
+            @for($pair = 0; $pair < 2; $pair++)
                 @php
-                    // Determine arrow direction for this column
+                    // Determine arrow direction for this pair
                     if ($arrowDir === 'left') {
                         $showLeft = true;
                     } elseif ($arrowDir === 'right') {
                         $showLeft = false;
                     } else {
-                        // Alternate: even columns = left, odd columns = right
-                        $showLeft = ($col % 2 == 0);
+                        // Alternate: pair 0 = left, pair 1 = right
+                        $showLeft = ($pair % 2 == 0);
                     }
                 @endphp
-                <x-arrow-indicator :direction="$showLeft ? 'left' : 'right'" :col="$col" :page="$pageNumber" />
+                <div class="arrow-cell arrow-cell-merged" onclick="toggleArrow(this)" data-col="{{ $pair }}" data-page="{{ $pageNumber }}">
+                    <div class="arrow-container" data-direction="{{ $showLeft ? 'left' : 'right' }}">
+                        @if($showLeft)
+                        <svg class="arrow-left" viewBox="0 0 100 30"><polygon points="0,15 20,0 20,10 100,10 100,20 20,20 20,30" fill="black"/></svg>
+                        @else
+                        <svg class="arrow-right" viewBox="0 0 100 30"><polygon points="100,15 80,0 80,10 0,10 0,20 80,20 80,30" fill="black"/></svg>
+                        @endif
+                    </div>
+                </div>
             @endfor
 
             {{-- QR Code Rows (5 rows per page) --}}
             @foreach($pageRows as $rowData)
-                {{-- Column 1: Col1 LUAR (a) --}}
-                <div class="qr-cell {{ !$rowData['col1'] ? 'empty' : '' }}">
-                    @if($rowData['col1'])
-                    <span class="floor-label" data-level="{{ $rowData['level'] }}" data-position="a">
-                        <span class="level-number">LANTAI {{ $rowData['level'] }}</span>
-                        <span class="position-type">LUAR</span>
-                    </span>
-                    <div class="qr-code">
-                        {!! QrCode::size(80)->generate($rowData['col1']['location']->location_code) !!}
+                @for($c = 1; $c <= 4; $c++)
+                    @php $item = $rowData['col' . $c] ?? null; @endphp
+                    <div class="qr-cell {{ !$item ? 'empty' : '' }}">
+                        @if($item)
+                        <span class="floor-label" data-floor="{{ $item['level'] ?? '' }}" data-sublevel="{{ $item['subLevel'] ?? '' }}">LANTAI {{ $item['level'] ?? '' }}{{ $item['subLevel'] ? ' ' . $item['subLevel'] : '' }}</span>
+                        <div class="qr-code">
+                            {!! QrCode::size(80)->generate($item['location']->location_code) !!}
+                        </div>
+                        <span class="location-code">{{ $item['location']->location_code }}</span>
+                        @endif
                     </div>
-                    <span class="location-code">{{ $rowData['col1']['location']->location_code }}</span>
-                    @endif
-                </div>
-                
-                {{-- Column 2: Col1 DALAM (b) --}}
-                <div class="qr-cell {{ !$rowData['col2'] ? 'empty' : '' }}">
-                    @if($rowData['col2'])
-                    <span class="floor-label" data-level="{{ $rowData['level'] }}" data-position="b">
-                        <span class="level-number">LANTAI {{ $rowData['level'] }}</span>
-                        <span class="position-type">DALAM</span>
-                    </span>
-                    <div class="qr-code">
-                        {!! QrCode::size(80)->generate($rowData['col2']['location']->location_code) !!}
-                    </div>
-                    <span class="location-code">{{ $rowData['col2']['location']->location_code }}</span>
-                    @endif
-                </div>
-                
-                {{-- Column 3: Col2 LUAR (a) --}}
-                <div class="qr-cell {{ !$rowData['col3'] ? 'empty' : '' }}">
-                    @if($rowData['col3'])
-                    <span class="floor-label" data-level="{{ $rowData['level'] }}" data-position="a">
-                        <span class="level-number">LANTAI {{ $rowData['level'] }}</span>
-                        <span class="position-type">LUAR</span>
-                    </span>
-                    <div class="qr-code">
-                        {!! QrCode::size(80)->generate($rowData['col3']['location']->location_code) !!}
-                    </div>
-                    <span class="location-code">{{ $rowData['col3']['location']->location_code }}</span>
-                    @endif
-                </div>
-                
-                {{-- Column 4: Col2 DALAM (b) --}}
-                <div class="qr-cell {{ !$rowData['col4'] ? 'empty' : '' }}">
-                    @if($rowData['col4'])
-                    <span class="floor-label" data-level="{{ $rowData['level'] }}" data-position="b">
-                        <span class="level-number">LANTAI {{ $rowData['level'] }}</span>
-                        <span class="position-type">DALAM</span>
-                    </span>
-                    <div class="qr-code">
-                        {!! QrCode::size(80)->generate($rowData['col4']['location']->location_code) !!}
-                    </div>
-                    <span class="location-code">{{ $rowData['col4']['location']->location_code }}</span>
-                    @endif
-                </div>
+                @endfor
             @endforeach
-
-
         </div>
     </div>
     @endforeach
@@ -641,7 +607,7 @@
         const leftArrowSVG = `<svg class="arrow-left" viewBox="0 0 100 30"><polygon points="0,15 20,0 20,10 100,10 100,20 20,20 20,30" fill="black"/></svg>`;
         const rightArrowSVG = `<svg class="arrow-right" viewBox="0 0 100 30"><polygon points="100,15 80,0 80,10 0,10 0,20 80,20 80,30" fill="black"/></svg>`;
         
-        // Arrow type state: 'single', 'double-same', 'triple-same', 'double-oppose'
+        // Arrow type state
         let currentArrowType = 'single';
         
         // Build arrow HTML from direction + count + oppose flag
@@ -690,133 +656,93 @@
             let cols = 4;
             let rowsPerPage;
             let numericCount;
-            let isPortrait;
-            let overrideItemsPerPage = null;
+            let isPortrait = true; // Gangway always portrait
             
-            if (count === '15') {
-                cols = 5;
+            if (count === '12p') {
                 rowsPerPage = 3;
-                numericCount = 15;
-                isPortrait = false;
-            } else if (count === '12p') {
-                cols = 4;
-                rowsPerPage = 5;
                 numericCount = 12;
-                isPortrait = true;
-                overrideItemsPerPage = 12;
+            } else if (count === '8p') {
+                rowsPerPage = 2;
+                numericCount = 8;
             } else {
                 numericCount = parseInt(count);
                 rowsPerPage = numericCount / 4;
-                isPortrait = numericCount >= 16;
             }
             
             currentRowsPerPage = rowsPerPage;
             const badge = document.getElementById('orientation-badge');
             const styleEl = document.getElementById('page-orientation');
             
-            if (isPortrait) {
-                document.documentElement.style.setProperty('--page-width', '210mm');
-                document.documentElement.style.setProperty('--page-height', '291mm');
-                styleEl.textContent = '@media print { @page { size: A4 portrait; margin: 3mm; } }';
-                badge.innerHTML = '\ud83d\udcd0 A4 Portrait: ' + cols + ' kolom \u00d7 ' + rowsPerPage + ' baris = ' + numericCount + ' lokasi/halaman';
-            } else {
-                document.documentElement.style.setProperty('--page-width', '291mm');
-                document.documentElement.style.setProperty('--page-height', '204mm');
-                styleEl.textContent = '@media print { @page { size: A4 landscape; margin: 3mm; } }';
-                badge.innerHTML = '\ud83d\udcd0 A4 Landscape: ' + cols + ' kolom \u00d7 ' + rowsPerPage + ' baris = ' + numericCount + ' lokasi/halaman';
-            }
+            document.documentElement.style.setProperty('--page-width', '210mm');
+            document.documentElement.style.setProperty('--page-height', '291mm');
+            styleEl.textContent = '@media print { @page { size: A4 portrait; margin: 3mm; } }';
+            badge.innerHTML = '\ud83d\udcd0 A4 Portrait: ' + cols + ' kolom \u00d7 ' + rowsPerPage + ' baris = ' + numericCount + ' lokasi/halaman';
             
-            restructurePages(rowsPerPage, cols, overrideItemsPerPage);
+            restructurePages(rowsPerPage, cols, numericCount);
         }
         
-        function restructurePages(rowsPerPage, cols, overrideItemsPerPage) {
+        function restructurePages(rowsPerPage, cols, itemsPerPage) {
             cols = cols || 4;
-            const chunkSize = overrideItemsPerPage || (rowsPerPage * cols);
+            itemsPerPage = itemsPerPage || (rowsPerPage * cols);
             const gridCapacity = rowsPerPage * cols;
             const container = document.getElementById('pages-container');
             
-            // Restore original HTML first to get all items back
+            // Restore original HTML first
             container.innerHTML = originalPagesHTML;
             
             const originalPages = container.querySelectorAll('.page');
             
-            // Helper: get level from a cell's floor-label
-            function getCellLevel(cell) {
-                const label = cell.querySelector('.floor-label');
-                if (!label) return null;
-                return parseInt(label.getAttribute('data-level')) || null;
-            }
-            
-            // Helper: get first/last non-null level from cells array
-            function getFirstLevel(cells) {
-                for (const c of cells) { const l = getCellLevel(c); if (l !== null) return l; }
-                return null;
-            }
-            function getLastLevel(cells) {
-                for (let i = cells.length - 1; i >= 0; i--) { const l = getCellLevel(cells[i]); if (l !== null) return l; }
-                return null;
-            }
-            
-            // Collect all individual QR cells from all pages (flatten)
+            // Collect ALL QR cells from all pages (flatten) - gangway is continuous
             const allCells = [];
-            const columnGroups = [];
-            let currentGroup = null;
+            const allArrows = [];
             
-            originalPages.forEach(page => {
-                const grid = page.querySelector('.dd-grid');
-                const arrows = Array.from(grid.querySelectorAll('.arrow-cell')).map(ac => ac.cloneNode(true));
-                const cells = Array.from(grid.querySelectorAll('.qr-cell')).map(c => c.cloneNode(true));
-                
-                if (!currentGroup) {
-                    currentGroup = { arrows: arrows, cells: [...cells] };
-                } else {
-                    const lastLvl = getLastLevel(currentGroup.cells);
-                    const firstLvl = getFirstLevel(cells);
-                    
-                    if (lastLvl !== null && firstLvl !== null && firstLvl <= lastLvl) {
-                        currentGroup.cells.push(...cells);
-                    } else {
-                        columnGroups.push(currentGroup);
-                        currentGroup = { arrows: arrows, cells: [...cells] };
+            originalPages.forEach((page, idx) => {
+                const grid = page.querySelector('.gangway-grid');
+                if (idx === 0) {
+                    // Grab arrows from first page as template
+                    allArrows.push(...Array.from(grid.querySelectorAll('.arrow-cell')).map(ac => ac.cloneNode(true)));
+                }
+                const cells = Array.from(grid.querySelectorAll('.qr-cell'));
+                cells.forEach(c => {
+                    // Only include non-empty cells
+                    if (!c.classList.contains('empty')) {
+                        allCells.push(c.cloneNode(true));
                     }
-                }
+                });
             });
-            if (currentGroup) columnGroups.push(currentGroup);
             
-            // Step 2: Re-chunk each column group into pages (using chunkSize for pagination)
+            // Re-chunk all cells into pages
             const allChunks = [];
-            columnGroups.forEach(group => {
-                for (let i = 0; i < group.cells.length; i += chunkSize) {
-                    allChunks.push({
-                        arrows: group.arrows,
-                        cells: group.cells.slice(i, i + chunkSize)
-                    });
-                }
-            });
+            for (let i = 0; i < allCells.length; i += itemsPerPage) {
+                allChunks.push(allCells.slice(i, i + itemsPerPage));
+            }
             
-            // Helper: create arrow cells for the required column count
-            function createArrowCells(sourceArrows, numCols) {
+            // If no chunks, create at least one empty page
+            if (allChunks.length === 0) {
+                allChunks.push([]);
+            }
+            
+            // Helper: create merged arrow cells (pairs of 2 columns)
+            function createArrowCells(sourceArrows) {
                 const arrowCells = [];
-                for (let i = 0; i < numCols; i++) {
-                    if (i < sourceArrows.length) {
-                        // Clone existing arrow and update col index
-                        const ac = sourceArrows[i].cloneNode(true);
-                        ac.setAttribute('data-col', i);
-                        // Re-render arrow with current type
+                const numPairs = 2; // Always 2 merged arrow pairs for 4 columns
+                for (let p = 0; p < numPairs; p++) {
+                    if (p < sourceArrows.length) {
+                        const ac = sourceArrows[p].cloneNode(true);
+                        ac.setAttribute('data-col', p);
                         const container = ac.querySelector('.arrow-container');
                         if (container) {
-                            const dir = container.getAttribute('data-direction') || ((i % 2 === 0) ? 'left' : 'right');
+                            const dir = container.getAttribute('data-direction') || ((p % 2 === 0) ? 'left' : 'right');
                             container.setAttribute('data-count', getCountFromType(currentArrowType));
                             container.innerHTML = getArrowHTML(currentArrowType, dir);
                         }
                         arrowCells.push(ac);
                     } else {
-                        // Create new arrow cell for extra columns
                         const ac = document.createElement('div');
-                        ac.className = 'arrow-cell';
-                        ac.setAttribute('data-col', i);
+                        ac.className = 'arrow-cell arrow-cell-merged';
+                        ac.setAttribute('data-col', p);
                         ac.setAttribute('onclick', 'toggleArrow(this)');
-                        const dir = (i % 2 === 0) ? 'left' : 'right';
+                        const dir = (p % 2 === 0) ? 'left' : 'right';
                         ac.innerHTML = '<div class="arrow-container" data-direction="' + dir + '" data-count="' + getCountFromType(currentArrowType) + '">' + getArrowHTML(currentArrowType, dir) + '</div>';
                         arrowCells.push(ac);
                     }
@@ -824,7 +750,7 @@
                 return arrowCells;
             }
             
-            // Step 3: Build pages
+            // Build pages
             container.innerHTML = '';
             
             allChunks.forEach((chunk, idx) => {
@@ -832,19 +758,19 @@
                 pageDiv.className = 'page' + (idx < allChunks.length - 1 ? ' page-break' : '');
                 
                 const gridDiv = document.createElement('div');
-                gridDiv.className = 'dd-grid';
+                gridDiv.className = 'gangway-grid';
                 gridDiv.style.gridTemplateColumns = 'repeat(' + cols + ', 1fr)';
                 gridDiv.style.gridTemplateRows = 'var(--arrow-row-height, 14mm) repeat(' + rowsPerPage + ', 1fr)';
                 
-                // Add arrow cells matching column count
-                const arrowCells = createArrowCells(chunk.arrows, cols);
+                // Add merged arrow cells
+                const arrowCells = createArrowCells(allArrows);
                 arrowCells.forEach(ac => gridDiv.appendChild(ac));
                 
                 // Add QR cells
-                chunk.cells.forEach(cell => gridDiv.appendChild(cell));
+                chunk.forEach(cell => gridDiv.appendChild(cell));
                 
-                // Pad with empty cells to fill grid capacity
-                const remaining = gridCapacity - chunk.cells.length;
+                // Pad with empty cells
+                const remaining = gridCapacity - chunk.length;
                 for (let p = 0; p < remaining; p++) {
                     const emptyCell = document.createElement('div');
                     emptyCell.className = 'qr-cell empty';
@@ -932,31 +858,23 @@
             }
         }
         
-        // Update all labels (level text, outer text, inner text)
-        function updateAllLabels() {
-            const levelText = document.getElementById('level-label-text').value || 'LANTAI';
-            const outerText = document.getElementById('outer-label-text').value || 'LUAR';
-            const innerText = document.getElementById('inner-label-text').value || 'DALAM';
-            
+        // Update Floor Labels text
+        function updateFloorLabels() {
+            const labelText = document.getElementById('floor-label-text').value || 'LANTAI';
             const floorLabels = document.querySelectorAll('.floor-label');
             
             floorLabels.forEach(label => {
-                const level = label.getAttribute('data-level');
-                const position = label.getAttribute('data-position');
-                
-                const levelSpan = label.querySelector('.level-number');
-                const positionSpan = label.querySelector('.position-type');
-                
-                if (levelSpan) {
-                    levelSpan.textContent = levelText + ' ' + level;
+                const floorNumber = label.getAttribute('data-floor');
+                const subLevel = label.getAttribute('data-sublevel');
+                let text = labelText + ' ' + floorNumber;
+                if (subLevel) {
+                    text += ' ' + subLevel;
                 }
-                if (positionSpan) {
-                    positionSpan.textContent = position === 'a' ? outerText : innerText;
-                }
+                label.textContent = text;
             });
         }
         
-        // Toggle individual arrow on click - cycles: ←→←←→→←←←→→→
+        // Toggle individual arrow on click
         function toggleArrow(cell) {
             const container = cell.querySelector('.arrow-container');
             const currentDir = container.getAttribute('data-direction') || 'left';
@@ -976,7 +894,7 @@
             container.innerHTML = buildArrowHTML(newDir, newCount, false);
         }
         
-        // Set all arrows to a specific direction (uses current dropdown type)
+        // Set all arrows to a specific direction
         function setAllArrows(direction) {
             const containers = document.querySelectorAll('.arrow-container');
             const count = getCountFromType(currentArrowType);
@@ -997,7 +915,7 @@
             });
         }
         
-        // Update arrow type (single/double-same/triple-same/double-oppose)
+        // Update arrow type
         function updateArrowType(type) {
             currentArrowType = type;
             const count = getCountFromType(type);

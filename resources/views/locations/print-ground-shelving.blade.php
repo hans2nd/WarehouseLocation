@@ -63,12 +63,12 @@
         /* Label Cell - horizontal strip */
         .label-cell {
             border: var(--border-width, 0.5px) solid black;
-            padding: var(--cell-padding, 2mm);
+            padding: 0 var(--cell-padding, 2mm);
             display: flex;
             flex-direction: row;
-            align-items: center;
+            align-items: stretch;
             justify-content: center;
-            gap: var(--label-gap, 3mm);
+            gap: 0;
             min-height: 0;
             overflow: hidden;
         }
@@ -83,11 +83,15 @@
             flex: 1;
             font-size: var(--font-size, 28px);
             font-weight: var(--font-weight, 900);
-            text-align: center;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
             letter-spacing: 1px;
+            border-right: var(--border-width, 0.5px) solid black;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 var(--label-gap, 3mm);
         }
 
         /* QR code on the right */
@@ -96,6 +100,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            padding: var(--cell-padding, 2mm);
         }
 
         .qr-code svg {

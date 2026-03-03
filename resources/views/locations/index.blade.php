@@ -389,6 +389,14 @@
                                 <p style="font-size: 12px; color: #6b7280; margin: 0;">Label horizontal (teks besar + QR) untuk rak ground</p>
                             </div>
                         </label>
+                        <label style="display: flex; align-items: center; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; cursor: pointer; transition: all 0.2s;"
+                               onmouseover="this.style.borderColor='#3b82f6'" onmouseout="this.style.borderColor='#e5e7eb'">
+                            <input type="radio" name="swal-print-type" value="gangway" style="margin-right: 12px; width: 18px; height: 18px;">
+                            <div>
+                                <strong style="color: #1f2937;">🚪 Gangway</strong>
+                                <p style="font-size: 12px; color: #6b7280; margin: 0;">Layout dengan panah merge kolom 1&2 dan 3&4, data mengisi semua kolom</p>
+                            </div>
+                        </label>
                     </div>
                     <p style="font-size: 11px; color: #9ca3af; margin-top: 12px; text-align: center;">💡 Ukuran QR & arah panah dapat diatur di halaman preview</p>
                 `,
