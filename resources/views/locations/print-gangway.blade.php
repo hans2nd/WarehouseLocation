@@ -476,6 +476,30 @@
             // Chunk rcKeys into sets of 4 (= 4 grid columns)
             $rcSets = array_chunk($rcKeys, 4);
             
+            // If arrow direction is left, reverse columns within each pair
+            // Pair 0 = col 0,1 and Pair 1 = col 2,3
+            // For 'alternate': pair 0 = left (swap), pair 1 = right (no swap)
+            $swapPair0 = ($arrowDir === 'left' || $arrowDir === 'alternate');
+            $swapPair1 = ($arrowDir === 'left');
+            
+            if ($swapPair0 || $swapPair1) {
+                foreach ($rcSets as &$rcSetRef) {
+                    // Swap within pair 0 (index 0 & 1)
+                    if ($swapPair0 && count($rcSetRef) >= 2) {
+                        $temp = $rcSetRef[0];
+                        $rcSetRef[0] = $rcSetRef[1];
+                        $rcSetRef[1] = $temp;
+                    }
+                    // Swap within pair 1 (index 2 & 3)
+                    if ($swapPair1 && count($rcSetRef) >= 4) {
+                        $temp = $rcSetRef[2];
+                        $rcSetRef[2] = $rcSetRef[3];
+                        $rcSetRef[3] = $temp;
+                    }
+                }
+                unset($rcSetRef);
+            }
+            
             foreach ($rcSets as $rcSet) {
                 // Find max level across all rcKeys in this set
                 $setMaxLevel = 0;
@@ -583,10 +607,14 @@
             @endfor
 
             {{-- QR Code Rows (5 rows per page) --}}
-            @foreach($pageRows as $rowData)
+            @foreach($pageRows as $rowIndex => $rowData)
                 @for($c = 1; $c <= 4; $c++)
-                    @php $item = $rowData['col' . $c] ?? null; @endphp
-                    <div class="qr-cell {{ !$item ? 'empty' : '' }}">
+                    @php
+                        $item = $rowData['col' . $c] ?? null;
+                        $pairIndex = ($c <= 2) ? 0 : 1;
+                        $pairPos = (($c - 1) % 2); // 0 or 1 within the pair
+                    @endphp
+                    <div class="qr-cell {{ !$item ? 'empty' : '' }}" data-pair="{{ $pairIndex }}" data-pair-pos="{{ $pairPos }}" data-row="{{ $rowIndex }}">
                         @if($item)
                         <span class="floor-label" data-floor="{{ $item['level'] ?? '' }}" data-sublevel="{{ $item['subLevel'] ?? '' }}">LANTAI {{ $item['level'] ?? '' }}{{ $item['subLevel'] ? ' ' . $item['subLevel'] : '' }}</span>
                         <div class="qr-code">
@@ -874,6 +902,43 @@
             });
         }
         
+        // Swap columns within a pair on a specific page
+        function swapColumnsInPair(page, pairIndex) {
+            const grid = page.querySelector('.gangway-grid');
+            if (!grid) return;
+            
+            // Get all QR cells in this grid
+            const allCells = Array.from(grid.querySelectorAll('.qr-cell'));
+            
+            // Group by row
+            const rowGroups = {};
+            allCells.forEach(cell => {
+                const row = cell.getAttribute('data-row');
+                const pair = parseInt(cell.getAttribute('data-pair'));
+                const pairPos = parseInt(cell.getAttribute('data-pair-pos'));
+                if (pair === pairIndex) {
+                    if (!rowGroups[row]) rowGroups[row] = {};
+                    rowGroups[row][pairPos] = cell;
+                }
+            });
+            
+            // Swap innerHTML of pos 0 and pos 1 for each row
+            Object.values(rowGroups).forEach(positions => {
+                if (positions[0] && positions[1]) {
+                    const tempHTML = positions[0].innerHTML;
+                    const tempEmpty0 = positions[0].classList.contains('empty');
+                    const tempEmpty1 = positions[1].classList.contains('empty');
+                    
+                    positions[0].innerHTML = positions[1].innerHTML;
+                    positions[1].innerHTML = tempHTML;
+                    
+                    // Swap empty class
+                    positions[0].classList.toggle('empty', tempEmpty1);
+                    positions[1].classList.toggle('empty', tempEmpty0);
+                }
+            });
+        }
+        
         // Toggle individual arrow on click
         function toggleArrow(cell) {
             const container = cell.querySelector('.arrow-container');
@@ -892,6 +957,11 @@
             container.setAttribute('data-direction', newDir);
             container.setAttribute('data-count', newCount);
             container.innerHTML = buildArrowHTML(newDir, newCount, false);
+            
+            // Swap columns in this pair
+            const pairIndex = parseInt(cell.getAttribute('data-col'));
+            const page = cell.closest('.page');
+            swapColumnsInPair(page, pairIndex);
         }
         
         // Set all arrows to a specific direction
@@ -901,12 +971,20 @@
             const oppose = currentArrowType === 'double-oppose';
             
             containers.forEach((container, index) => {
+                const cell = container.closest('.arrow-cell');
+                const oldDir = container.getAttribute('data-direction') || 'left';
                 let newDir = direction;
                 
                 if (direction === 'alternate') {
-                    const cell = container.closest('.arrow-cell');
                     const col = parseInt(cell.getAttribute('data-col'));
                     newDir = (col % 2 === 0) ? 'left' : 'right';
+                }
+                
+                // Only swap columns if direction actually changed
+                if (oldDir !== newDir) {
+                    const pairIndex = parseInt(cell.getAttribute('data-col'));
+                    const page = cell.closest('.page');
+                    swapColumnsInPair(page, pairIndex);
                 }
                 
                 container.setAttribute('data-direction', newDir);
