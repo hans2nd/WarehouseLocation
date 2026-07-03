@@ -35,7 +35,14 @@ class LocationController extends Controller
             'file' => 'required|mimes:xlsx,xls',
         ]);
 
-        Excel::import(new LocationsImport, $request->file('file'));
+        $file = $request->file('file');
+        if (!$file->isValid()) {
+            return back()->withErrors(['file' => 'File upload failed.']);
+        }
+        
+        $path = $file->store('temp');
+        Excel::import(new LocationsImport, $path);
+        \Illuminate\Support\Facades\Storage::delete($path);
         
         return back()->with('success', 'Data berhasil diimport!');
     }
