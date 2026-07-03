@@ -40,9 +40,13 @@ class LocationController extends Controller
             return back()->withErrors(['file' => 'File upload failed.']);
         }
         
-        $path = $file->store('temp');
-        Excel::import(new LocationsImport, $path);
-        \Illuminate\Support\Facades\Storage::delete($path);
+        $filename = time() . '_' . $file->getClientOriginalName();
+        $destination = storage_path('app/temp');
+        $file->move($destination, $filename);
+        $absolutePath = $destination . '/' . $filename;
+        
+        Excel::import(new LocationsImport, $absolutePath);
+        @unlink($absolutePath);
         
         return back()->with('success', 'Data berhasil diimport!');
     }
